@@ -39,7 +39,7 @@ CREATE TABLE plant (
 );
 
 CREATE TABLE measurement (
-    measurement_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    measurement_id INT IDENTITY(1,1) PRIMARY KEY,
     plant_id TINYINT NOT NULL,
     measurement_time DATETIME NOT NULL,
     last_watered DATETIME NOT NULL,
