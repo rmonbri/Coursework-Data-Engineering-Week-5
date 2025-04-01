@@ -17,7 +17,7 @@ def get_plant_data(id: int):
     retries = 3
 
     for attempt in range(retries):
-        response = requests.get(plant_url, timeout=5)
+        response = requests.get(plant_url, timeout=30)
 
         if response.status_code == 200:
             return response.json()
@@ -38,7 +38,7 @@ def get_plant_data_multiprocessing():
     """Function to get all the plant measurements using multiprocessing"""
 
     with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
-        plant_data = pool.map(get_plant_data, range(1, 51))
+        plant_data = pool.map(get_plant_data, range(51))
 
     return [plant for plant in plant_data if plant]
 
@@ -50,7 +50,7 @@ def save_to_csv(data: list[dict], file_name: str):
         print('Nothing to save')
         return
     columns = ["plant_id", "name", "temperature",
-               "soil_moisture", "last_watered"]
+               "moisture", "last_watered", "measurement_time"]
     with open(file_name, "w", newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=columns)
         writer.writeheader()
@@ -60,8 +60,9 @@ def save_to_csv(data: list[dict], file_name: str):
                 "plant_id": plant.get("plant_id", ""),
                 "name": plant.get("name", ""),
                 "temperature": plant.get("temperature", ""),
-                "soil_moisture": plant.get("soil_moisture", ""),
-                "last_watered": plant.get("last_watered", "")
+                "moisture": plant.get("soil_moisture", ""),
+                "last_watered": plant.get("last_watered", ""),
+                "measurement_time": plant.get("recording_taken", "")
 
             })
 
