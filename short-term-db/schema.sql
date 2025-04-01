@@ -29,7 +29,7 @@ CREATE TABLE origin (
 );
 
 CREATE TABLE plant (
-    plant_id TINYINT IDENTITY(1,1) PRIMARY KEY,
+    plant_id TINYINT PRIMARY KEY NOT NULL,
     botanist_id TINYINT NOT NULL,
     plant_type_id TINYINT NOT NULL,
     location_id TINYINT NOT NULL,
