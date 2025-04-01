@@ -33,9 +33,10 @@ def save_clean_data_to_csv(data: pd.DataFrame):
     data to csv file"""
 
     clean_data = transform_to_datetime(data)
-    clean_data = round_floats(data)
+    clean_data = round_floats(clean_data)
 
     clean_data.to_csv("data/clean-plant-measurements.csv", index=False)
+    print("Clean data saved to clean-plant-measurements.csv")
 
 
 if __name__ == "__main__":
