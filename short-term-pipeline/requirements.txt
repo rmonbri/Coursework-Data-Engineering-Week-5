@@ -1,2 +1,2 @@
 python-dotenv
-psycopg2
+pymssql

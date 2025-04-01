@@ -2,19 +2,19 @@ import os
 import csv
 from dotenv import load_dotenv
 from shutil import rmtree
-import psycopg2
+import pymssql
 
 DATA_PATH = './data/clean-plant-measurements.csv'
 
 
-def get_connection_to_db() -> psycopg2.connection:
-    '''Gets a psycopg2 connection to the short term MS SQL short-term DB'''
+def get_connection_to_db() -> pymssql.connection:
+    '''Gets a pymssql connection to the short term MS SQL short-term DB'''
     load_dotenv()
-    return psycopg2.connect(host=os.getenv('DB_HOST'),
-                            database=os.getenv('DB_NAME'),
-                            user=os.getenv('DB_USERNAME'),
-                            password=os.getenv('DB_PASSWORD'),
-                            port=os.getenv('DB_PORT'))
+    return pymssql.connect(host=os.getenv('DB_HOST'),
+                           database=os.getenv('DB_NAME'),
+                           user=os.getenv('DB_USERNAME'),
+                           password=os.getenv('DB_PASSWORD'),
+                           port=os.getenv('DB_PORT'))
 
 
 def get_measurements(path: str = DATA_PATH) -> list[dict]:
@@ -25,7 +25,7 @@ def get_measurements(path: str = DATA_PATH) -> list[dict]:
         return [tuple(row) for row in csv_reader]
 
 
-def upload_row(row: tuple, conn: psycopg2.connection) -> None:
+def upload_row(row: tuple, conn: pymssql.connection) -> None:
     '''Uploads a single measurement row to the database for the specified connection.'''
     cur = conn.cursor()
     sql = '''
