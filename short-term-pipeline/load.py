@@ -45,15 +45,6 @@ def ingress_measurements_to_db(measurements: list[tuple]) -> None:
         upload_row(measurement_row, conn)
 
 
-def delete_ingressed_data_files(path: str = DATA_PATH) -> None:
-    '''Deletes the file where the data was ingressed from'''
-    if os.path.exists(path):
-        os.remove(path)
-    else:
-        print("The file does not exist")
-
-
 if __name__ == '__main__':
     measurements = get_measurements()
     ingress_measurements_to_db(measurements)
-    delete_ingressed_data_files()
