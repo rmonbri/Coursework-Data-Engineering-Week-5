@@ -69,7 +69,7 @@ def save_to_csv(data: list[dict], file_name: str):
 if __name__ == "__main__":
     start = time.time()
     all_plant_data = get_plant_data_multiprocessing()
-    save_to_csv(all_plant_data, "plants.csv")
+    save_to_csv(all_plant_data, "data/plant-measurements.csv")
     end = time.time()
 
     print(f"Time to run: {end-start}")
