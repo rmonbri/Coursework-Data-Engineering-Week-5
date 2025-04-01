@@ -23,6 +23,7 @@ def get_measurements(path: str = DATA_PATH) -> list[dict]:
     from data/clean-plant-measurements.csv unless a different path is specified"""
     with open(path, "r", encoding="utf-8") as file:
         csv_reader = csv.reader(file)
+        # TODO: Change here - currently tries to read CSV headings
         return [tuple(row) for row in csv_reader]
 
 
