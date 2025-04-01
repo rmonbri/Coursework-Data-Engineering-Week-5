@@ -3,6 +3,7 @@
 import multiprocessing
 import time
 import csv
+import os
 import requests
 
 
@@ -51,6 +52,7 @@ def save_to_csv(data: list[dict], file_name: str):
         return
     columns = ["plant_id", "temperature",
                "moisture", "last_watered", "measurement_time"]
+    os.makedirs("data", exist_ok=True)
     with open(file_name, "w", newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=columns)
         writer.writeheader()
