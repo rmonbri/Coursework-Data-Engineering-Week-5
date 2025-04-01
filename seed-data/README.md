@@ -1,1 +1,2 @@
 # Script for getting seed data
+This script scans the plant API'https://data-eng-plants-api.herokuapp.com/plants/8' that receives and displays new plant environment data from Raspberry Pi sensors each minute.
