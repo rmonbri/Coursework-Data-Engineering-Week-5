@@ -49,7 +49,7 @@ def save_to_csv(data: list[dict], file_name: str):
     if not data:
         print('Nothing to save')
         return
-    columns = ["plant_id", "name", "temperature",
+    columns = ["plant_id", "temperature",
                "moisture", "last_watered", "measurement_time"]
     with open(file_name, "w", newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=columns)
@@ -58,7 +58,6 @@ def save_to_csv(data: list[dict], file_name: str):
         for plant in data:
             writer.writerow({
                 "plant_id": plant.get("plant_id", ""),
-                "name": plant.get("name", ""),
                 "temperature": plant.get("temperature", ""),
                 "moisture": plant.get("soil_moisture", ""),
                 "last_watered": plant.get("last_watered", ""),
