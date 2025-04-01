@@ -3,6 +3,7 @@
 import multiprocessing
 import time
 import csv
+import os
 import requests
 
 
@@ -49,8 +50,9 @@ def save_to_csv(data: list[dict], file_name: str):
     if not data:
         print('Nothing to save')
         return
-    columns = ["plant_id", "name", "temperature",
+    columns = ["plant_id", "temperature",
                "moisture", "last_watered", "measurement_time"]
+    os.makedirs("data", exist_ok=True)
     with open(file_name, "w", newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=columns)
         writer.writeheader()
@@ -58,7 +60,6 @@ def save_to_csv(data: list[dict], file_name: str):
         for plant in data:
             writer.writerow({
                 "plant_id": plant.get("plant_id", ""),
-                "name": plant.get("name", ""),
                 "temperature": plant.get("temperature", ""),
                 "moisture": plant.get("soil_moisture", ""),
                 "last_watered": plant.get("last_watered", ""),
@@ -70,7 +71,7 @@ def save_to_csv(data: list[dict], file_name: str):
 if __name__ == "__main__":
     start = time.time()
     all_plant_data = get_plant_data_multiprocessing()
-    save_to_csv(all_plant_data, "plants.csv")
+    save_to_csv(all_plant_data, "data/plant-measurements.csv")
     end = time.time()
 
     print(f"Time to run: {end-start}")
