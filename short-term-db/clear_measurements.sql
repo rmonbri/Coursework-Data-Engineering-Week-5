@@ -1,0 +1,12 @@
+USE lmnh_plants;
+GO
+
+BEGIN TRANSACTION;
+
+ALTER TABLE measurement NOCHECK CONSTRAINT FK_plant_id;
+
+TRUNCATE TABLE measurement;
+
+ALTER TABLE measurement WITH CHECK CHECK CONSTRAINT FK_plant_id;
+
+COMMIT TRANSACTION;
