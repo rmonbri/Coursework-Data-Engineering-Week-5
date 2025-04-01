@@ -1,8 +1,10 @@
 """Script to extract all plant measurements from API and save to csv file"""
-import requests
-import csv
+
 import multiprocessing
 import time
+import csv
+import requests
+
 
 BASE_URL = "https://data-eng-plants-api.herokuapp.com/plants/"
 
@@ -15,11 +17,11 @@ def get_plant_data(id: int):
     retries = 3
 
     for attempt in range(retries):
-        response = requests.get(plant_url)
+        response = requests.get(plant_url, timeout=5)
 
         if response.status_code == 200:
             return response.json()
-        elif response.status_code == 500:
+        if response.status_code == 500:
             print(
                 f"Status code 500 for plant ID {id}, retrying... (Attempt {attempt + 1})")
             time.sleep(2)
@@ -49,7 +51,7 @@ def save_to_csv(data: list[dict], file_name: str):
         return
     columns = ["plant_id", "name", "temperature",
                "soil_moisture", "last_watered"]
-    with open(file_name, "w", newline='') as f:
+    with open(file_name, "w", newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=columns)
         writer.writeheader()
 
@@ -66,8 +68,8 @@ def save_to_csv(data: list[dict], file_name: str):
 
 if __name__ == "__main__":
     start = time.time()
-    plant_data = get_plant_data_multiprocessing()
-    save_to_csv(plant_data, "plants.csv")
+    all_plant_data = get_plant_data_multiprocessing()
+    save_to_csv(all_plant_data, "plants.csv")
     end = time.time()
 
     print(f"Time to run: {end-start}")
