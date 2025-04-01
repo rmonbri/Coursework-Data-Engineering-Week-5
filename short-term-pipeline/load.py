@@ -1,9 +1,10 @@
-from dotenv import load_dotenv
 import os
+import csv
+from dotenv import load_dotenv
+from shutil import rmtree
 import psycopg2
-import pandas as pd
 
-DATA_PATH = 'a'
+DATA_PATH = './data/clean-plant-measurements.csv'
 
 
 def get_connection_to_db() -> psycopg2.connection:
@@ -16,34 +17,43 @@ def get_connection_to_db() -> psycopg2.connection:
                             port=os.getenv('DB_PORT'))
 
 
-def create_temp_table(conn: psycopg2.connection) -> None:
-    '''creates temporary table to upload the measurements batch data to the database'''
-    sql_create_tmp_table = """
-                DROP TABLE IF EXISTS tmp_table;
-                CREATE TABLE tmp_table (
-                at TIMESTAMPTZ,
-                site smallint,
-                val float,
-                type float
-                );
-              """
+def get_measurements(path: str = DATA_PATH) -> list[dict]:
+    '''Gets transformed and validated measurements 
+    from data/clean-plant-measurements.csv unless a different path is specified'''
+    with open(path, 'r') as file:
+        csv_reader = csv.reader(file)
+        return [tuple(row) for row in csv_reader]
 
 
-def get_measurements(path: str = DATA_PATH) -> pd.DataFrame | dict | list[dict]:
-    '''Gets transformed and validated measurements from  data/(something.csv)'''
-    # TODO(FEATURE): Waiting on transformation data output path (i could just ask tbh)
-    pass
+def upload_row(row: tuple, conn: psycopg2.connection) -> None:
+    '''Uploads a single measurement row to the database for the specified connection.'''
+    cur = conn.cursor()
+    sql = '''
+        INSERT into measurement
+        (plant_id, measurement_time, last_watered, moisture, temperature)
+        VALUES
+        (%s, %s, %s, %s, %s);
+        '''
+    cur.execute(sql, row)
+    cur.commit()
 
 
-def ingress_measurements_to_db():
+def ingress_measurements_to_db(measurements: list[tuple]) -> None:
     '''Ingresses given measurement data into the short-term db'''
-    pass
+    conn = get_connection_to_db()
+    for measurement_row in measurements:
+        upload_row(measurement_row, conn)
 
 
-def delete_ingressed_data_files() -> None:
-    '''Deletes the files where the data was ingressed from'''
-    pass
+def delete_ingressed_data_files(path: str = DATA_PATH) -> None:
+    '''Deletes the file where the data was ingressed from'''
+    if os.path.exists(path):
+        os.remove(path)
+    else:
+        print("The file does not exist")
 
 
 if __name__ == '__main__':
-    print('a')
+    measurements = get_measurements()
+    ingress_measurements_to_db(measurements)
+    delete_ingressed_data_files()
