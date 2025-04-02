@@ -17,6 +17,21 @@ def pipeline():
     ingress_measurements_to_db(plant_measurements)
 
 
+def lambda_handler(event, context):
+    try:
+        pipeline()
+        return {
+            'statusCode': 200,
+            'body': 'Pipeline completed successfully!'
+        }
+
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': f"Pipeline failed with error: {str(e)}"
+        }
+
+
 if __name__ == "__main__":
 
     pipeline()
