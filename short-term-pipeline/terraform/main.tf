@@ -37,7 +37,7 @@ resource "aws_iam_role" "louis-etl-lambda-iam" {
 resource "aws_lambda_function" "etl-measurements-lambda" {
   function_name = "c16-louis-measurements-etl"
   image_uri = data.aws_ecr_image.louis-etl-image.image_uri
-  role = aws_iam_role.louis-etl-lambda-iam
+  role = aws_iam_role.louis-etl-lambda-iam.arn
   package_type = "Image"
   environment {
     variables = {
@@ -45,7 +45,7 @@ resource "aws_lambda_function" "etl-measurements-lambda" {
                 DB_USERNAME=var.DB_USERNAME,
                 DB_HOST=var.DB_HOST,
                 DB_PORT=var.DB_PORT,
-                DB_PASSWORD=var.DB_PASSWORD,
+                DB_PASSWORD=var.DB_PASSWORD
     }
   }
 }

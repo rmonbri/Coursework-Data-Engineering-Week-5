@@ -24,16 +24,6 @@ variable "DB_PORT" {
   description = "SQL Server Database port"
 }
 
-variable "AWS_ACCESS_KEY_ID" {
-  type = string
-  description = "AWS Key"
-}
-
-variable "AWS_SECRET_ACCESS_KEY" {
-  type = string
-  description = "AWS Secret"
-}
-
 variable "existing_vpc_name" {
   type = string
   description = "VPC Name"
