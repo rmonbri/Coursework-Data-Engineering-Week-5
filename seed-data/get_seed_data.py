@@ -6,6 +6,7 @@ import requests
 
 
 BASE_URL = "https://data-eng-plants-api.herokuapp.com/plants/"
+NUM_PLANTS = 51
 
 
 def make_get_request(plant_id: int) -> dict:
@@ -32,16 +33,37 @@ def make_get_request(plant_id: int) -> dict:
     return None
 
 
-def get_seed_data():
+def get_seed_data() -> dict:
     '''Sorts API get request information into a seed_data dictionary'''
-    seed_data = {"botanist": [], "origin": [], "plant_type": []}
-    for i in range(51):
-        data = make_get_request(i)
+    seed_data = {"botanist": [], "origin": [],
+                 "plant_type": [], "plant_id": []}
+    for plant_id in range(0, NUM_PLANTS):
+        data = make_get_request(plant_id)
         if data:
-            seed_data = get_botanist(data, seed_data)
-            seed_data = get_origin(data, seed_data)
-            seed_data = get_plant_type(data, seed_data)
+            (seed_data, botanist_data) = get_botanist(data, seed_data)
+            (seed_data, origin_data) = get_origin(data, seed_data)
+            (seed_data, plant_type_data) = get_plant_type(data, seed_data)
 
+            seed_data = get_plant_id(
+                data, seed_data, botanist_data, origin_data, plant_type_data)
+
+    return seed_data
+
+
+def get_plant_id(data, seed_data, botanist_data, origin_data, plant_type_data):
+    '''Returns the values for plant_id to the seed_data dictionary'''
+    plant_id = data.get("plant_id", "")
+    botanist_id = seed_data['botanist'].index(botanist_data)
+    origin_id = seed_data['origin'].index(origin_data)
+    plant_type_id = seed_data['plant_type'].index(plant_type_data)
+
+    plant_id_dict = {'plant_id': plant_id,
+                     'botanist_id': botanist_id + 1,
+                     'origin_data': origin_id + 1,
+                     'plant_type_id': plant_type_id + 1}
+
+    if plant_id is not None and plant_id not in seed_data['plant_id']:
+        seed_data['plant_id'].append(plant_id_dict)
     return seed_data
 
 
@@ -50,7 +72,7 @@ def get_botanist(data, seed_data):
     botanist = data.get("botanist", "")
     if botanist and botanist not in seed_data['botanist']:
         seed_data['botanist'].append(botanist)
-    return seed_data
+    return seed_data, botanist
 
 
 def get_origin(data, seed_data):
@@ -61,7 +83,7 @@ def get_origin(data, seed_data):
                        "locality": origin[2], "country_code": origin[3], "timezone": origin[4]}
         if origin_dict not in seed_data['origin']:
             seed_data['origin'].append(origin_dict)
-    return seed_data
+    return seed_data, origin_dict
 
 
 def get_plant_type(data, seed_data):
@@ -76,7 +98,7 @@ def get_plant_type(data, seed_data):
         plant_name_dict["scientific_name"] = scientific_name
         if plant_name_dict not in seed_data['plant_type']:
             seed_data['plant_type'].append(plant_name_dict)
-    return seed_data
+    return seed_data, plant_name_dict
 
 
 def save_all_data_to_csv(seed_data):
@@ -84,9 +106,11 @@ def save_all_data_to_csv(seed_data):
     if not seed_data:
         print("No seed data available.")
         return
+
     save_botanist_data_as_csv(seed_data)
     save_origin_data_as_csv(seed_data)
     save_plant_type_data_as_csv(seed_data)
+    save_plant_id_data_as_csv(seed_data)
 
 
 def save_botanist_data_as_csv(seed_data):
@@ -99,6 +123,19 @@ def save_botanist_data_as_csv(seed_data):
         for values in seed_data['botanist']:
             writer.writerow(values)
     print("botanist.csv created!")
+
+
+def save_plant_id_data_as_csv(seed_data):
+    '''Saves plant_id data to csv'''
+    print("Saving plant_id data to csv...")
+    with open('plant_id.csv', 'w', newline='', encoding="utf-8") as csvfile:
+        fieldnames = ['plant_id', 'botanist_id',
+                      'origin_data', 'plant_type_id',]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for values in seed_data['plant_id']:
+            writer.writerow(values)
+    print("plant_id.csv created!")
 
 
 def save_origin_data_as_csv(seed_data):
