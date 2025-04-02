@@ -75,6 +75,3 @@ if __name__ == "__main__":
     add_data_to_database(origin_data, ORIGIN_SQL)
     add_data_to_database(plant_type, PLANT_TYPE_SQL)
     add_data_to_database(plant_data, PLANT_SQL)
-
-
-# sqlcmd -S c16-louis-db.c57vkec7dkkx.eu-west-2.rds.amazonaws.com -U louis_admin -P pd8W2rPBam4a
