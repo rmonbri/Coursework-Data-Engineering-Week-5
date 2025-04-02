@@ -1,50 +1,66 @@
+# pylint: disable = no-member
+"""Import data to database"""
 import os
 import csv
 from dotenv import load_dotenv
-from shutil import rmtree
 import pymssql
 
-DATA_PATH = './data/clean-plant-measurements.csv'
+DATA_PATH = "./data/clean-plant-measurements.csv"
 
 
-def get_connection_to_db() -> pymssql.connection:
-    '''Gets a pymssql connection to the short term MS SQL short-term DB'''
+def get_connection_to_db() -> pymssql.Connection:
+    """Gets a pymssql connection to the short term MS SQL short-term DB"""
     load_dotenv()
-    return pymssql.connect(host=os.getenv('DB_HOST'),
-                           database=os.getenv('DB_NAME'),
-                           user=os.getenv('DB_USERNAME'),
-                           password=os.getenv('DB_PASSWORD'),
-                           port=os.getenv('DB_PORT'))
+    return pymssql.connect(host=os.getenv("DB_HOST"),
+                           database=os.getenv("DB_NAME"),
+                           user=os.getenv("DB_USERNAME"),
+                           password=os.getenv("DB_PASSWORD"),
+                           port=os.getenv("DB_PORT"))
 
 
 def get_measurements(path: str = DATA_PATH) -> list[dict]:
-    '''Gets transformed and validated measurements 
-    from data/clean-plant-measurements.csv unless a different path is specified'''
-    with open(path, 'r') as file:
+    """Gets transformed and validated measurements 
+    from data/clean-plant-measurements.csv unless a different path is specified"""
+    with open(path, "r", encoding="utf-8") as file:
         csv_reader = csv.reader(file)
+        # TODO: Change here - currently tries to read CSV headings
         return [tuple(row) for row in csv_reader]
 
 
-def upload_row(row: tuple, conn: pymssql.connection) -> None:
-    '''Uploads a single measurement row to the database for the specified connection.'''
+# TODO: Remove?
+def upload_row(row: tuple, conn) -> None:
+    """Uploads a single measurement row to the database for the specified connection."""
     cur = conn.cursor()
-    sql = '''
+    sql = """
         INSERT into measurement
-        (plant_id, measurement_time, last_watered, moisture, temperature)
+        (plant_id, temperature, moisture, last_watered, measurement_time)
         VALUES
         (%s, %s, %s, %s, %s);
-        '''
+        """
     cur.execute(sql, row)
     cur.commit()
 
 
+def upload_many_rows(rows: list[tuple], conn) -> None:
+    """Uploads a single measurement row to the database for the specified connection."""
+    cur = conn.cursor()
+    sql = """
+        INSERT into measurement
+        (plant_id, temperature, moisture, last_watered, measurement_time)
+        VALUES
+        (%s, %s, %s, %s, %s);
+        """
+    cur.executemany(sql, rows)
+    cur.commit()
+
+
 def ingress_measurements_to_db(measurements: list[tuple]) -> None:
-    '''Ingresses given measurement data into the short-term db'''
+    """Ingresses given measurement data into the short-term db"""
     conn = get_connection_to_db()
-    for measurement_row in measurements:
-        upload_row(measurement_row, conn)
+    upload_many_rows(measurements, conn)
+    conn.close()
 
 
-if __name__ == '__main__':
-    measurements = get_measurements()
-    ingress_measurements_to_db(measurements)
+if __name__ == "__main__":
+    plant_measurements = get_measurements()
+    ingress_measurements_to_db(plant_measurements)
