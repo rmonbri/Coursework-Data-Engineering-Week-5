@@ -6,6 +6,12 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY extract.py transform.py load.py pipeline.py ./
+COPY extract.py .
+
+COPY transform.py .
+
+COPY load.py .
+
+COPY pipeline.py .
 
 CMD [ "pipeline.handler" ]
