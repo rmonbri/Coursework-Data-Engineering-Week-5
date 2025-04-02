@@ -17,7 +17,10 @@ def local_pipeline():
     ingress_measurements_to_db(plant_measurements)
 
 
-def lambda_handler(event, context):
+def handler(event, context):
+    """Lambda Handler to add measurements"""
+    print(f'Event: {event}')
+    print(f'Context: {context}')
     try:
         load_dotenv()
         print("Getting plant data from API")
@@ -25,6 +28,7 @@ def lambda_handler(event, context):
         print("Plant data extracted")
         print("Cleaning plant data")
         raw_data = read_data(plant_data)
+        print("Created DataFrame")
         cleaned_data = clean_data(raw_data)
         print("Data cleaned")
         print("Inserting clean data to database")

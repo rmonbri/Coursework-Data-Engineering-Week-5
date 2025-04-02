@@ -10,7 +10,17 @@ def read_csv_data(file_name: str) -> pd.DataFrame:
 
 def read_data(data: list[dict]) -> pd.DataFrame:
     """reading from list of data"""
-    return pd.DataFrame(data)
+    df = []
+    for plant in data:
+        d = {
+            "plant_id": plant.get("plant_id", ""),
+            "temperature": plant.get("temperature", ""),
+            "moisture": plant.get("soil_moisture", ""),
+            "last_watered": plant.get("last_watered", ""),
+            "measurement_time": plant.get("recording_taken", "")
+        }
+        df.append(d)
+    return pd.DataFrame(df)
 
 
 def transform_to_datetime(data: pd.DataFrame) -> pd.DataFrame:

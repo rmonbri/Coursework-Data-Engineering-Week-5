@@ -8,4 +8,4 @@ RUN pip install -r requirements.txt
 
 COPY extract.py transform.py load.py pipeline.py ./
 
-CMD [ "pipeline.lambda_handler" ]
+CMD [ "pipeline.handler" ]
