@@ -4,6 +4,7 @@ import os
 import csv
 from dotenv import load_dotenv
 import pymssql
+import pandas as pd
 
 DATA_PATH = "./data/clean-plant-measurements.csv"
 
@@ -18,13 +19,18 @@ def get_connection_to_db() -> pymssql.Connection:
                            port=os.getenv("DB_PORT"))
 
 
-def get_measurements(path: str = DATA_PATH) -> list[dict]:
+def get_measurements_from_csv(path: str = DATA_PATH) -> list[dict]:
     """Gets transformed and validated measurements 
     from data/clean-plant-measurements.csv unless a different path is specified"""
     with open(path, "r", encoding="utf-8") as file:
         csv_reader = csv.reader(file)
         next(csv_reader)
         return [tuple(row) for row in csv_reader]
+
+
+def get_measurements_from_df(data: pd.DataFrame) -> list[tuple]:
+
+    return [tuple(row) for row in data.itertuples(index=False, name=None)]
 
 
 def upload_many_rows(rows: list[tuple], conn) -> None:
@@ -48,5 +54,5 @@ def ingress_measurements_to_db(measurements: list[tuple]) -> None:
 
 
 if __name__ == "__main__":
-    plant_measurements = get_measurements()
+    plant_measurements = get_measurements_from_csv()
     ingress_measurements_to_db(plant_measurements)
