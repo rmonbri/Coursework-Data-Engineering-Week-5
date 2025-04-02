@@ -96,3 +96,5 @@ venv/
 *.tfstate.backup
 .terraform.lock.hcl
 *.log
+
+short-term-pipeline/data
