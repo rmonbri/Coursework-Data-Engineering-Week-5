@@ -3,9 +3,14 @@
 import pandas as pd
 
 
-def read_data(file_name: str) -> pd.DataFrame:
+def read_csv_data(file_name: str) -> pd.DataFrame:
     """reading from csv into dataframe"""
     return pd.read_csv(file_name)
+
+
+def read_data(data: list[dict]) -> pd.DataFrame:
+    """reading from list of data"""
+    return pd.DataFrame(data)
 
 
 def transform_to_datetime(data: pd.DataFrame) -> pd.DataFrame:
@@ -28,12 +33,17 @@ def round_floats(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-def save_clean_data_to_csv(data: pd.DataFrame):
-    """applying all transformations to the dataframe and saving clean
-    data to csv file"""
+def clean_data(data: pd.DataFrame) -> pd.DataFrame:
 
     clean_data = transform_to_datetime(data)
     clean_data = round_floats(clean_data)
+
+    return clean_data
+
+
+def save_clean_data_to_csv(data: pd.DataFrame):
+    """applying all transformations to the dataframe and saving clean
+    data to csv file"""
 
     clean_data.to_csv("data/clean-plant-measurements.csv", index=False)
     print("Clean data saved to clean-plant-measurements.csv")
@@ -42,4 +52,5 @@ def save_clean_data_to_csv(data: pd.DataFrame):
 if __name__ == "__main__":
 
     final_data = read_data("data/plant-measurements.csv")
-    save_clean_data_to_csv(final_data)
+    cleaned_data = clean_data(final_data)
+    save_clean_data_to_csv(cleaned_data)
