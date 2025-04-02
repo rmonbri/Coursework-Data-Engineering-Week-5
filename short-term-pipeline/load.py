@@ -23,22 +23,8 @@ def get_measurements(path: str = DATA_PATH) -> list[dict]:
     from data/clean-plant-measurements.csv unless a different path is specified"""
     with open(path, "r", encoding="utf-8") as file:
         csv_reader = csv.reader(file)
-        # TODO: Change here - currently tries to read CSV headings
+        next(csv_reader)
         return [tuple(row) for row in csv_reader]
-
-
-# TODO: Remove?
-def upload_row(row: tuple, conn) -> None:
-    """Uploads a single measurement row to the database for the specified connection."""
-    cur = conn.cursor()
-    sql = """
-        INSERT into measurement
-        (plant_id, temperature, moisture, last_watered, measurement_time)
-        VALUES
-        (%s, %s, %s, %s, %s);
-        """
-    cur.execute(sql, row)
-    cur.commit()
 
 
 def upload_many_rows(rows: list[tuple], conn) -> None:
@@ -51,7 +37,7 @@ def upload_many_rows(rows: list[tuple], conn) -> None:
         (%s, %s, %s, %s, %s);
         """
     cur.executemany(sql, rows)
-    cur.commit()
+    conn.commit()
 
 
 def ingress_measurements_to_db(measurements: list[tuple]) -> None:
