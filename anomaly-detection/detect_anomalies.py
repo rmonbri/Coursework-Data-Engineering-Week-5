@@ -26,10 +26,11 @@ def get_time_n_minutes_ago(n: int) -> datetime:
 
 
 def get_sql_for_recent_measurements(n: int) -> str:
-    '''Gets '''''  # currently fetching unnecessary cols eg last watered or measurement time
+    '''Gets an sql query statement for the last n minutes of measurements'''''
     time = get_time_n_minutes_ago(n)
     sql = f'''
-        SELECT * FROM measurement
+        SELECT plant_id,moisture,temperature
+        FROM measurement
         WHERE measurement_time > '{time}' 
         order by measurement_time desc
           '''
