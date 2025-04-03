@@ -47,7 +47,7 @@ def clean_data(data: pd.DataFrame) -> pd.DataFrame:
 
     clean_data = transform_to_datetime(data)
     clean_data = round_floats(clean_data)
-    clean_data = correct_measurement_time(clean_data)
+    clean_data = correct_timezones(clean_data)
 
     return clean_data
 
