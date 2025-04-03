@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 BOTANIST_SQL = """
         INSERT into botanist
-        (botanist_number, botanist_email, botanist_name)
+        (botanist_name, botanist_email, botanist_number)
         VALUES
         (%s, %s, %s);
         """
