@@ -1,0 +1,6 @@
+pandas
+streamlit
+python-dotenv
+pymssql
+pyodbc
+datetime
