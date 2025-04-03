@@ -1,9 +1,11 @@
 '''This script detects anomalies in the last n (SPECIFY) measurements from the plant readers'''
 import os
+from datetime import datetime, timedelta
+from scipy.stats import zscore
 from dotenv import load_dotenv
 import pymssql
 import pandas as pd
-from scipy.stats import zscore
+
 
 def get_connection_to_db() -> pymssql.Connection:
     """Gets a pymssql connection to the short term MS SQL short-term DB"""
@@ -12,42 +14,79 @@ def get_connection_to_db() -> pymssql.Connection:
                            database=os.getenv("DB_NAME"),
                            user=os.getenv("DB_USERNAME"),
                            password=os.getenv("DB_PASSWORD"),
-                           port=os.getenv("DB_PORT"),)
+                           port=os.getenv("DB_PORT"))
 
 
-def get_last_n_measurements(n:int) -> pd.DataFrame:
-    '''Gets a dataframe with the last n measurement batches from the short-term database'''
+def get_time_n_minutes_ago(n: int) -> datetime:
+    '''Gets a timestamp for n minutes ago '''  # n will be specified later on based on data observations
+    time = datetime.now()-timedelta(minutes=n,
+                                    hours=1)  # hour is set to 1 to correct for the api being one hour behind. This should change later
+    print(time)
+    return time.strftime('%Y-%m-%d %H:%M:%S')
+
+
+def get_sql_for_recent_measurements(n: int) -> str:
+    '''Gets '''''  # currently fetching unnecessary cols eg last watered or measurement time
+    time = get_time_n_minutes_ago(n)
+    sql = f'''
+        SELECT * FROM measurement
+        WHERE measurement_time > '{time}' 
+        order by measurement_time desc
+          '''
+    return sql
+
+
+def get_recent_measurements() -> pd.DataFrame:
+    '''Gets a dataframe with the last (specified) measurement batches from the short-term database'''
     try:
-        n = n*50 # This assumes that we're logging null values when there are no responses. This should work since each batch of 50 measurements will be spaced out by 1 min, but maybe we need a more robust way of doing this? 
         conn = get_connection_to_db()
-        sql = f'''
-              SELECT TOP {n} 
-              * 
-              FROM measurement
-              ORDER BY measurement_type DESC;
-              '''
-        df = pd.read_sql(sql,conn)
+        sql = get_sql_for_recent_measurements(10)
+        df = pd.read_sql(sql, conn)
         return df
     finally:
         conn.close()
-    
-def add_zscore_columns(measurements:pd.DataFrame) -> pd.Dataframe:
+
+
+def add_zscore_columns(measurements: pd.DataFrame) -> pd.DataFrame:
     '''Returns a measurements df with added zscore columns for moisture and temperature'''
-    measurements[['moisture_zscore','temperature_zscore']] = measurements[['moisture','temperature']].apply(zscore)
+    measurements[['moisture_zscore', 'temperature_zscore']
+                 ] = measurements[['moisture', 'temperature']].apply(zscore)
     return measurements
 
-def get_outliers_by_zscore(measurements:pd.DataFrame,zscore_threshold:float =2.5) -> pd.DataFrame:
-    '''Returns a dataframe of outliers whose zscores is greater than 2.5 unless specified otherwise.'''
-    condition = measurements[['moisture_zscore','temperature_zscore']].abs() < zscore_threshold
-    return measurements[condition]
 
-def get_outlier_count_per_plant() -> dict:
-    pass
+def get_outliers_by_zscore(measurements: pd.DataFrame, zscore_threshold: float = 2.5) -> pd.DataFrame:
+    '''Returns a dataframe of outliers whose zscores is greater than 2.5 unless specified otherwise.'''  # threshold will be specified later on based on data observations
+    temperature_condition = measurements['temperature_zscore'].abs(
+    ) > zscore_threshold
+    moisture_condition = measurements['moisture_zscore'].abs(
+    ) > zscore_threshold
+    return measurements[moisture_condition], measurements[temperature_condition]
 
-def alert_inconsistency() -> dict:
-    pass
+
+def get_outlier_count_per_plant(measurements: pd.DataFrame) -> dict:
+    '''Returns the count of outliers in a dictionary where the
+      keys are the plant_ids and the values are the outlier counts'''
+    moist_outliers, temp_outliers = get_outliers_by_zscore(measurements)
+    moist_outlier_count = moist_outliers.groupby(
+        ['plant_id'])['plant_id'].count()
+    temp_outlier_count = temp_outliers.groupby(
+        ['plant_id'])['plant_id'].count()
+    return temp_outlier_count, moist_outlier_count
+
+
+def detect_plant_risks(measurements: pd.DataFrame, threshold: int = 5) -> dict[str:bool]:
+    '''Returns the plant id for which sensor is giving 
+    more than 'threshold' outliers for moisture or temperature'''
+    temp_outlier_count, moist_outlier_count = get_outlier_count_per_plant(
+        measurements)
+    temp_outlier_count = temp_outlier_count[temp_outlier_count >= threshold]
+    moist_outlier_count = moist_outlier_count[moist_outlier_count >= threshold]
+    outliers = {'moisture': list(moist_outlier_count.keys()),
+                'temperature': list(temp_outlier_count.keys())}
+    return outliers
 
 
 if __name__ == '__main__':
-    get_connection_to_db()
-    print(get_last_n_measurements(10))
+    measurements = get_recent_measurements()
+    measurements = add_zscore_columns(measurements)
+    print(detect_plant_risks(measurements))
