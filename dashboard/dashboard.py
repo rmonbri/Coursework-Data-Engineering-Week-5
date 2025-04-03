@@ -1,102 +1,59 @@
+'''A script that creates a Streamlit dashboard using LMNH plant data from the last 24 hours'''
 from os import environ as ENV
-import csv
-from dotenv import load_dotenv
-import pandas as pd
-import streamlit as st
-import pyodbc
 from datetime import datetime, timedelta
-import altair as alt
+from dotenv import load_dotenv  # pylint: disable=import-error
+import pandas as pd  # pylint: disable=import-error
+import streamlit as st  # pylint: disable=import-error
+import pyodbc  # pylint: disable=import-error
+import altair as alt  # pylint: disable=import-error
 
-
-# @st.cache_data
-# def get_UN_data():
-#     AWS_BUCKET_URL = "https://streamlit-demo-data.s3-us-west-2.amazonaws.com"
-#     df = pd.read_csv(AWS_BUCKET_URL + "/agri.csv.gz")
-#     return df.set_index("Region")
-
-
-# try:
-#     df = get_UN_data()
-#     countries = st.multiselect(
-#         "Choose countries", list(df.index), [
-#             "China", "United States of America"]
-#     )
-#     if not countries:
-#         st.error("Please select at least one country.")
-#     else:
-#         data = df.loc[countries]
-#         data /= 1000000.0
-#         st.subheader("Gross agricultural production ($B)")
-#         st.dataframe(data.sort_index())
-
-#         data = data.T.reset_index()
-#         data = pd.melt(data, id_vars=["index"]).rename(
-#             columns={"index": "year",
-#                      "value": "Gross Agricultural Product ($B)"}
-#         )
-#         chart = (
-#             alt.Chart(data)
-#             .mark_area(opacity=0.3)
-#             .encode(
-#                 x="year:T",
-#                 y=alt.Y("Gross Agricultural Product ($B):Q", stack=None),
-#                 color="Region:N",
-#             )
-#         )
-#         st.altair_chart(chart, use_container_width=True)
-# except URLError as e:
-#     st.error(
-#         f"This demo requires internet access. Connection error: {e.reason}")
 
 def get_conn():
+    '''Connects to AWS RDS using pyodbc'''
     conn_str = (f"DRIVER={{{ENV['DB_DRIVER']}}};SERVER={ENV['DB_HOST']};"
                 f"PORT={ENV['DB_PORT']};DATABASE={ENV['DB_NAME']};"
                 f"UID={ENV['DB_USERNAME']};PWD={ENV['DB_PASSWORD']};Encrypt=no;")
 
-    conn = pyodbc.connect(conn_str)
+    connection = pyodbc.connect(conn_str)
 
-    return conn
+    return connection
 
 
-def execute_query(conn, q: str):
-    cur = conn.cursor()
+def execute_query(connection, q: str):
+    '''Executes a query using pyodbc'''
+    cur = connection.cursor()
     cur.execute(q)
     data = cur.fetchall()
     return data
 
 
-# def get_df_from_csv(filename: csv):
-#     return pd.read_csv(filename)
-
-
-# def get_df_from_sql(query, conn):
-#     return pd.read_sql(query, conn)
-
-def get_plant_information(conn) -> pd.DataFrame:
+def get_plant_information(connection) -> pd.DataFrame:
     '''Queries the database, returns and merges tables'''
-    plant_type_df = pd.read_sql('SELECT * FROM plant_type', conn)
-    botanist_df = pd.read_sql('SELECT * FROM botanist', conn)
-    origin_df = pd.read_sql('SELECT * FROM origin', conn)
-    plant_df = pd.read_sql('SELECT * FROM plant', conn)
+    plant_type_df = pd.read_sql('SELECT * FROM plant_type', connection)
+    botanist_df = pd.read_sql('SELECT * FROM botanist', connection)
+    origin_df = pd.read_sql('SELECT * FROM origin', connection)
+    plant_df = pd.read_sql('SELECT * FROM plant', connection)
     merged_plant_with_type = pd.merge(plant_df, plant_type_df,
                                       on='plant_type_id', how='outer')
     merged_plant_with_type_with_botanist = pd.merge(
         merged_plant_with_type, botanist_df, on='botanist_id', how='outer')
     plant_information = pd.merge(
-        merged_plant_with_type_with_botanist, origin_df, on='location_id', how='outer').sort_values("plant_id")
+        merged_plant_with_type_with_botanist, origin_df, on='location_id', how='outer'
+    ).sort_values("plant_id")
     return plant_information
 
 
-def get_measurements(conn) -> pd.DataFrame:
+def get_measurements(connection) -> pd.DataFrame:
     '''Returns all measurements from the measurement table taken within 24 hours'''
     query = "SELECT * FROM measurement;"
-    measurement = pd.read_sql(query, conn)
+    measurement = pd.read_sql(query, connection)
     measurement = measurement[measurement['measurement_time']
                               > datetime.now() - timedelta(hours=24)]
     return measurement
 
 
 def create_botanist_pie_chart(df):
+    '''Creates a pie chart of plant count per botanist'''
     g_df = df.groupby("botanist_name").agg(
         {"plant_id": "count"}).reset_index()
 
@@ -109,7 +66,8 @@ def create_botanist_pie_chart(df):
         color=alt.Color(field="Botanist", type="nominal",
                         scale=alt.Scale(scheme="greens"))
     )
-    text = pie.mark_text(radius=110, fontSize=25, fill="black", baseline="middle", align="center").encode(
+    text = pie.mark_text(radius=110, fontSize=25, fill="black", baseline="middle", align="center"
+                         ).encode(
         text=alt.Text("Number of plants:Q")
     )
     chart = (pie + text).properties(
@@ -120,6 +78,7 @@ def create_botanist_pie_chart(df):
 
 
 def create_single_plant_chart(merged_df, plant_id):
+    '''Creates a 24hr reading chart for a single plant using ID'''
     single_plant_measurement = merged_df[merged_df['plant_id'] == plant_id].sort_values(
         "measurement_time").reset_index()
 
@@ -141,75 +100,9 @@ def create_single_plant_chart(merged_df, plant_id):
 
     chart = alt.layer(temperature_line, moisture_line).resolve_scale(
         y='independent'
-    ).properties(title=f"Temperature and moisture content of the {plant_name} over the last 24 hours")
+    ).properties(title=f"Temperature + moisture content of the {plant_name} over the last 24 hours")
 
     return chart, plant_name
-
-
-def streamlit(pie_chart, merged_df):
-    '''Execute the streamlit code'''
-    st.set_page_config(
-        page_title="Botanist Dashboard", layout="wide")
-
-    st.markdown(
-        """
-    <style>
-        body {
-            background-color: #e8daba;
-            color: #000000;
-        }
-        .stApp {
-            background-color: #e8daba;
-        }
-        .stSidebar {
-            background-color: #94ce81;
-        }
-    </style>
-    """,
-        unsafe_allow_html=True
-    )
-
-    st.title(
-        ":seedling: :green[Botanist Dashboard] :seedling:")
-    st.header(
-        "_Liverpool Museum of Natural History_")
-    st.subheader("Summary Statistics")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.altair_chart(pie_chart)
-
-    with col2:
-        yesterday_temperature_mean, yesterday_moisture_mean = display_reading_change(
-            merged_df)
-        temperature_mean = merged_df['temperature'].mean()
-        moisture_mean = merged_df['moisture'].mean()
-        temperature_difference_string = f"{(temperature_mean - yesterday_temperature_mean).round(2)}°C since yesterday"
-        moisture_difference_string = f"{(moisture_mean - yesterday_moisture_mean).round(2)}% since yesterday"
-        # st.subheader(
-        #     f"Avg. Temperature: {temperature_mean.round(2)}°C")
-        st.metric(label="Avg. Temperature", value=f"{temperature_mean.round(2)}°C",
-                  delta=temperature_difference_string)
-        # st.subheader(
-        #     f"# Avg. Moisture: {moisture_mean.round(2)}%")
-        st.metric(label="# Avg. Moisture:", value=f"{moisture_mean.round(2)}%",
-                  delta=moisture_difference_string)
-
-    with col3:
-        st.write("### Title")
-
-    st.subheader("Short-Term Database Insights")
-    chosen_plant_id = int(st.selectbox(
-        "Which plant would you like to analyse? Choose a plant ID:",
-        (merged_df['plant_id'].unique()))
-    )
-    plant_chart, plant_name = create_single_plant_chart(
-        merged_df, chosen_plant_id)
-
-    st.write(f"You have selected the {plant_name}: ID {chosen_plant_id}")
-
-    st.altair_chart(plant_chart)
 
 
 def display_reading_change(merged_df):
@@ -221,13 +114,107 @@ def display_reading_change(merged_df):
     return temperature_mean, moisture_mean
 
 
+def get_anomalies(merged_df):
+    '''Returns a dataframe of plant_id and anomaly count (temp with |zscore| > 2.5)'''
+    merged_df = merged_df.copy()
+    merged_df['temperature_zscore'] = merged_df.groupby('plant_id')['temperature'].transform(
+        lambda x: (x - x.mean()) / x.std()
+    )
+
+    merged_df['anomalies'] = (abs(merged_df['temperature_zscore']) > 2.5).groupby(
+        merged_df['plant_id']).transform('sum')
+
+    return merged_df[['plant_id', 'anomalies']].drop_duplicates()
+
+
+def get_plant_by_anomaly_chart(merged_df, plant_df):
+    '''Returns a bar chart of the top 10 plants by anomaly count'''
+    anomaly_summary = get_anomalies(
+        merged_df).reset_index().drop(columns=['index'])
+    anomaly_df = pd.merge(anomaly_summary, plant_df,
+                          how='outer', on="plant_id")
+    top_10_anomalies = anomaly_df.sort_values(
+        'anomalies', ascending=False).head(10)
+    top_10_anomalies = top_10_anomalies[[
+        'plant_id', "anomalies", "plant_name"]]
+    top_10_anomalies.rename(columns={
+                            "plant_id": "Plant ID", "anomalies": "Anomaly Count", "plant_name": "Name"})
+    chart = alt.Chart(top_10_anomalies).mark_bar().encode(
+        x=alt.X('anomalies:Q', axis=alt.Axis(title='Anomaly Count')),
+        y=alt.Y('plant_name:O', sort=alt.EncodingSortField(
+            field='anomalies', order='descending'), axis=alt.Axis(title='Plant Name')),
+        color=alt.Color('anomalies:Q', scale=alt.Scale(scheme='greens'), legend=alt.Legend(
+            title='Anomaly Count')),
+        tooltip=['plant_name', 'plant_id', 'anomalies']
+    ).properties(
+        width=600,
+        height=400,
+        title='Anomalous temperature results per plant in the last 24 hours'
+    )
+
+    return chart
+
+
+def streamlit(pie_chart, merged_df, plant_df):
+    '''Execute the streamlit code'''
+    st.set_page_config(
+        page_title="Botanist Dashboard", layout="wide")
+
+    st.title(
+        ":seedling: :green[Botanist Dashboard] :seedling:")
+
+    st.header(
+        "_Liverpool Museum of Natural History_")
+
+    st.subheader("Summary Statistics")
+
+    yesterday_temperature_mean, yesterday_moisture_mean = display_reading_change(
+        merged_df)
+
+    temperature_mean = merged_df['temperature'].mean()
+    temperature_difference_str = f"{(temperature_mean-yesterday_temperature_mean).round(2)}°C since yesterday"
+
+    moisture_mean = merged_df['moisture'].mean()
+    moisture_difference_str = f"{(moisture_mean-yesterday_moisture_mean).round(2)}% since yesterday"
+
+    col1, col2 = st.columns([3, 5])
+
+    with col1:
+        col3, col4 = st.columns(2)
+        with col3:
+            st.metric(label="# Avg. Moisture:", value=f"{moisture_mean.round(2)}%",
+                      delta=moisture_difference_str)
+        with col4:
+            st.metric(label="Avg. Temperature", value=f"{temperature_mean.round(2)}°C",
+                      delta=temperature_difference_str)
+
+        st.altair_chart(pie_chart)
+
+    with col2:
+        anomaly_chart = get_plant_by_anomaly_chart(merged_df, plant_df)
+
+        st.write("Temperature anomalies over the past 24 hours")
+        st.altair_chart(anomaly_chart)
+
+    st.subheader("Short-Term Database Insights")
+
+    chosen_plant_id = int(st.selectbox(
+        "Which plant would you like to analyse? Choose a plant ID:",
+        (merged_df['plant_id'].unique())))
+    plant_chart, plant_name = create_single_plant_chart(
+        merged_df, chosen_plant_id)
+
+    st.write(f"You have selected the {plant_name}: ID {chosen_plant_id}")
+    st.altair_chart(plant_chart)
+
+
 if __name__ == "__main__":
     load_dotenv()
-
     conn = get_conn()
     plant_df = get_plant_information(conn)
     print(plant_df.head())
     measurement_df = get_measurements(conn)
-    merged_df = pd.merge(plant_df, measurement_df, on='plant_id', how='outer')
+    merged_24hr_df = pd.merge(plant_df, measurement_df,
+                              on='plant_id', how='outer')
     botanist_pie_chart = create_botanist_pie_chart(plant_df)
-    streamlit(botanist_pie_chart, merged_df)
+    streamlit(botanist_pie_chart, merged_24hr_df, plant_df)
