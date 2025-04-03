@@ -20,9 +20,7 @@ def get_connection_to_db() -> pymssql.Connection:
 def get_time_n_minutes_ago(n: int) -> datetime:
     '''Gets a timestamp for n minutes ago '''
     # n will be specified later on based on data observations
-    time = datetime.now()-timedelta(minutes=n,
-                                    hours=1)
-    # hour is set to 1 to correct for the api being one hour behind. This should change later
+    time = datetime.now()-timedelta(minutes=n)
     print(time)
     return time.strftime('%Y-%m-%d %H:%M:%S')
 
