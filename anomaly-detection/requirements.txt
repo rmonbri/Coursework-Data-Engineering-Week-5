@@ -2,3 +2,4 @@ python-dotenv
 pymssql
 pandas
 scipy
+boto3
