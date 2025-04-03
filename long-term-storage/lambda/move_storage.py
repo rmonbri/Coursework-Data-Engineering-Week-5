@@ -129,7 +129,7 @@ def handler(event, context):
     old_data = get_old_data(cutoff_datetime)
     if not old_data:
         logging.info("No data present... Exiting...")
-        return {'status': 404}
+        return {'status': 404, 'reason': 'No rows found'}
 
     buffered_data = generate_file(old_data)
     key = generate_key(cutoff_datetime)
