@@ -8,7 +8,7 @@ import pyodbc  # pylint: disable=import-error
 import altair as alt  # pylint: disable=import-error
 
 
-def get_conn():
+def get_conn() -> pyodbc.Connection:
     '''Connects to AWS RDS using pyodbc'''
     conn_str = (f"DRIVER={{{ENV['DB_DRIVER']}}};SERVER={ENV['DB_HOST']};"
                 f"PORT={ENV['DB_PORT']};DATABASE={ENV['DB_NAME']};"
@@ -19,7 +19,7 @@ def get_conn():
     return connection
 
 
-def execute_query(connection, q: str):
+def execute_query(connection: pyodbc.Connection, q: str) -> dict[list]:
     '''Executes a query using pyodbc'''
     cur = connection.cursor()
     cur.execute(q)
@@ -27,7 +27,7 @@ def execute_query(connection, q: str):
     return data
 
 
-def get_plant_information(connection) -> pd.DataFrame:
+def get_plant_information(connection: pyodbc.Connection) -> pd.DataFrame:
     '''Queries the database, returns and merges tables'''
     plant_type_df = pd.read_sql('SELECT * FROM plant_type', connection)
     botanist_df = pd.read_sql('SELECT * FROM botanist', connection)
@@ -43,7 +43,7 @@ def get_plant_information(connection) -> pd.DataFrame:
     return plant_information
 
 
-def get_measurements(connection) -> pd.DataFrame:
+def get_measurements(connection: pyodbc.Connection) -> pd.DataFrame:
     '''Returns all measurements from the measurement table taken within 24 hours'''
     query = "SELECT * FROM measurement;"
     measurement = pd.read_sql(query, connection)
@@ -52,7 +52,7 @@ def get_measurements(connection) -> pd.DataFrame:
     return measurement
 
 
-def create_botanist_pie_chart(df):
+def create_botanist_pie_chart(df: pd.DataFrame) -> alt.Chart:
     '''Creates a pie chart of plant count per botanist'''
     g_df = df.groupby("botanist_name").agg(
         {"plant_id": "count"}).reset_index()
@@ -77,7 +77,7 @@ def create_botanist_pie_chart(df):
     return chart
 
 
-def create_single_plant_chart(merged_df, plant_id):
+def create_single_plant_chart(merged_df: pd.DataFrame, plant_id: int) -> alt.Chart:
     '''Creates a 24hr reading chart for a single plant using ID'''
     single_plant_measurement = merged_df[merged_df['plant_id'] == plant_id].sort_values(
         "measurement_time").reset_index()
@@ -105,7 +105,7 @@ def create_single_plant_chart(merged_df, plant_id):
     return chart, plant_name
 
 
-def display_reading_change(merged_df):
+def display_reading_change(merged_df: pd.DataFrame) -> float:
     """Display the difference between readings from today and all time"""
     not_today_df = merged_df[merged_df['measurement_time'].dt.day !=
                              datetime.now().day]
@@ -114,7 +114,7 @@ def display_reading_change(merged_df):
     return temperature_mean, moisture_mean
 
 
-def get_anomalies(merged_df):
+def get_anomalies(merged_df: pd.DataFrame) -> pd.DataFrame:
     '''Returns a dataframe of plant_id and anomaly count (temp with |zscore| > 2.5)'''
     merged_df = merged_df.copy()
     merged_df['temperature_zscore'] = merged_df.groupby('plant_id')['temperature'].transform(
@@ -127,7 +127,7 @@ def get_anomalies(merged_df):
     return merged_df[['plant_id', 'anomalies']].drop_duplicates()
 
 
-def get_plant_by_anomaly_chart(merged_df, plant_df):
+def get_plant_by_anomaly_chart(merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> alt.Chart:
     '''Returns a bar chart of the top 10 plants by anomaly count'''
     anomaly_summary = get_anomalies(
         merged_df).reset_index().drop(columns=['index'])
@@ -155,7 +155,7 @@ def get_plant_by_anomaly_chart(merged_df, plant_df):
     return chart
 
 
-def streamlit(pie_chart, merged_df, plant_df):
+def streamlit(merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> None:
     '''Execute the streamlit code'''
     st.set_page_config(
         page_title="Botanist Dashboard", layout="wide")
@@ -188,7 +188,9 @@ def streamlit(pie_chart, merged_df, plant_df):
             st.metric(label="Avg. Temperature", value=f"{temperature_mean.round(2)}°C",
                       delta=temperature_difference_str)
 
-        st.altair_chart(pie_chart)
+        botanist_pie_chart = create_botanist_pie_chart(plant_df)
+
+        st.altair_chart(botanist_pie_chart)
 
     with col2:
         anomaly_chart = get_plant_by_anomaly_chart(merged_df, plant_df)
@@ -211,9 +213,7 @@ if __name__ == "__main__":
     load_dotenv()
     conn = get_conn()
     plant_df = get_plant_information(conn)
-    print(plant_df.head())
     measurement_df = get_measurements(conn)
     merged_24hr_df = pd.merge(plant_df, measurement_df,
                               on='plant_id', how='outer')
-    botanist_pie_chart = create_botanist_pie_chart(plant_df)
-    streamlit(botanist_pie_chart, merged_24hr_df, plant_df)
+    streamlit(merged_24hr_df, plant_df)
