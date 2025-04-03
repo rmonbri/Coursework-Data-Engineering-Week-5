@@ -25,12 +25,12 @@ def transform_to_datetime(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-def correct_measurement_time(data: pd.DataFrame) -> pd.DataFrame:
+def correct_timezones(data: pd.DataFrame) -> pd.DataFrame:
     '''Corrects measurement time to account for Daylight saving times'''
-    print(data['measurement_time'])
     data['measurement_time'] = data['measurement_time'].apply(
         lambda x: x+timedelta(hours=1))
-    print(data['measurement_time'])
+    data['last_watered'] = data['last_watered'].apply(
+        lambda x: x+timedelta(hours=1))
     return data
 
 
