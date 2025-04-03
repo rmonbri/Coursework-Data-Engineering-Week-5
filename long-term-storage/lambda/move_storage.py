@@ -1,5 +1,5 @@
 """Lambda Handler that moves old records to S3 Storage"""
-# pylint: disable = no-member
+# pylint: disable = no-member, broad-exception-caught
 import os
 import io
 import logging
@@ -13,6 +13,7 @@ load_dotenv('.env.prod')
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+PRODUCTION_MODE = os.getenv("PRODUCTION_MODE", 'False') == 'True'
 
 
 def enable_logging() -> None:
@@ -79,20 +80,31 @@ def upload_data(key: str, buffered_data: io.BytesIO) -> dict:
     return response
 
 
-def delete_old_data(cutoff_date: datetime):
+def delete_old_data(cutoff_date: datetime) -> int:
     """Delete old rows from the database"""
     logging.info("Deleting old records from the database.")
     db_conn = connect_to_db()
     db_cursor = db_conn.cursor()
+    try:
+        db_cursor.execute("""DELETE
+        FROM measurement
+        WHERE measurement_time < %s;""", cutoff_date)
 
-    db_cursor.execute("""SELECT COUNT(*) as Count
-    FROM measurement
-    WHERE measurement_time < %s;""", cutoff_date)
+        if PRODUCTION_MODE:
+            db_conn.commit()
+            logging.warning("Committed changes to database!")
+        rows_count = db_cursor.rowcount
 
-    rows = db_cursor.fetchone()
-    db_cursor.close()
-    db_conn.close()
-    logging.info("Dropped %s rows", rows.get('Count'))
+    except pymssql.Error as error:
+        logging.error("Error - : %s", error)
+        db_conn.rollback()
+        return -1
+    finally:
+        db_cursor.close()
+        db_conn.close()
+
+    logging.info("Dropped %s rows", rows_count)
+    return rows_count
 
 
 def handler(event, context):
@@ -100,6 +112,13 @@ def handler(event, context):
     enable_logging()
     logging.info("Lambda Running - Event: %s", event)
     logging.info("Lambda Context passed: %s", context)
+
+    if PRODUCTION_MODE:
+        logging.critical(
+            "PRODUCTION MODE IS ENABLED - WILL COMMIT CHANGES TO DATABASE")
+    else:
+        logging.critical(
+            "PRODUCTION MODE DISABLED - NO CHANGES WILL BE MADE IN THE DATABASE")
 
     cutoff_datetime = datetime.now() - timedelta(hours=24)
     cutoff_datetime = cutoff_datetime.replace(
@@ -121,10 +140,13 @@ def handler(event, context):
 
     if status != 200:
         logging.error("Error! - Status Code: %s", status)
-        return {'status': status}
+        return {'status': status, 'reason': 'S3 Error'}
 
-    delete_old_data(cutoff_datetime)
-    return {'status': 200}
+    db_result = delete_old_data(cutoff_datetime)
+    if db_result == -1:
+        return {'status': 500}
+
+    return {'status': 200, 'rows_deleted': db_result}
 
 
 if __name__ == '__main__':
