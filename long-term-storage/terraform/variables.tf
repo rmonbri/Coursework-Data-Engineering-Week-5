@@ -24,7 +24,12 @@ variable "DB_PORT" {
   description = "SQL Server Database port"
 }
 
-variable "existing_vpc_name" {
+variable "PRODUCTION_MODE" {
+  type = bool
+  description = "If set to 'TRUE' will commit changes to database"
+}
+
+variable "BUCKET_NAME" {
   type = string
-  description = "VPC Name"
+  description = "Bucket Name"
 }

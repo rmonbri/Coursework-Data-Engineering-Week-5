@@ -13,7 +13,7 @@ load_dotenv('.env.prod')
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-PRODUCTION_MODE = os.getenv("PRODUCTION_MODE", 'False') == 'True'
+PRODUCTION_MODE = os.getenv("PRODUCTION_MODE", 'FALSE').lower() == 'true'
 
 
 def enable_logging() -> None:

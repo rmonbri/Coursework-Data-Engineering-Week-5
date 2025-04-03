@@ -29,17 +29,20 @@ data "aws_iam_policy_document" "assume_role" {
       identifiers = ["lambda.amazonaws.com"]
     }
 
-    actions = ["sts:AssumeRole"]
+    actions = [
+      "sts:AssumeRole"
+      ]
+      
   }
 }
 
 resource "aws_iam_role" "louis-storage-lambda-iam" {
-  name               = "c16-louis-measurements-lambda-iam"
+  name               = "c16-louis-storage-lambda-iam"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
 resource "aws_lambda_function" "long-term-storage-lambda" {
-  function_name = "c16-louis-measurements-etl"
+  function_name = "c16-louis-storage"
   image_uri = data.aws_ecr_image.louis-storage-image.image_uri
   role = aws_iam_role.louis-storage-lambda-iam.arn
   package_type = "Image"
@@ -49,7 +52,10 @@ resource "aws_lambda_function" "long-term-storage-lambda" {
                 DB_USERNAME=var.DB_USERNAME,
                 DB_HOST=var.DB_HOST,
                 DB_PORT=var.DB_PORT,
-                DB_PASSWORD=var.DB_PASSWORD
+                DB_PASSWORD=var.DB_PASSWORD,
+                PRODUCTION_MODE=var.PRODUCTION_MODE,
+                BUCKET_NAME=var.BUCKET_NAME
+
     }
   }
 }
