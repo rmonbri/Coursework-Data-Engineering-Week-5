@@ -142,7 +142,6 @@ def run_email_pipeline():
 
     print("Detecting anomalies...")
     anomalies = detect_plant_risks(recent_measurements)
-    # anomalies = {'moisture': [27], 'temperature': []}
     print(f"anomalies detected: {anomalies}")
     affected_plants = anomalies["moisture"] + anomalies["temperature"]
     if not affected_plants:
