@@ -45,6 +45,7 @@ def get_old_data(cutoff_date: datetime) -> list[dict]:
     WHERE measurement_time < %s;""", cutoff_date)
 
     data = db_cursor.fetchall()
+    db_cursor.close()
     db_conn.close()
     logging.info("Connection closed, data fetched.")
     return data
@@ -78,13 +79,34 @@ def upload_data(key: str, buffered_data: io.BytesIO) -> dict:
     return response
 
 
+def delete_old_data(cutoff_date: datetime):
+    """Delete old rows from the database"""
+    logging.info("Deleting old records from the database.")
+    db_conn = connect_to_db()
+    db_cursor = db_conn.cursor()
+
+    db_cursor.execute("""SELECT COUNT(*) as Count
+    FROM measurement
+    WHERE measurement_time < %s;""", cutoff_date)
+
+    rows = db_cursor.fetchone()
+    db_cursor.close()
+    db_conn.close()
+    logging.info("Dropped %s rows", rows.get('Count'))
+
+
 def handler(event, context):
     """Main handler function"""
     enable_logging()
     logging.info("Lambda Running - Event: %s", event)
     logging.info("Lambda Context passed: %s", context)
 
-    cutoff_datetime = datetime.now() - timedelta(hours=16)
+    cutoff_datetime = datetime.now() - timedelta(hours=24)
+    cutoff_datetime = cutoff_datetime.replace(
+        minute=0, second=0, microsecond=0)
+
+    logging.info("Cutting off data older than: %s", cutoff_datetime)
+
     old_data = get_old_data(cutoff_datetime)
     if not old_data:
         logging.info("No data present... Exiting...")
@@ -101,6 +123,7 @@ def handler(event, context):
         logging.error("Error! - Status Code: %s", status)
         return {'status': status}
 
+    delete_old_data(cutoff_datetime)
     return {'status': 200}
 
 
