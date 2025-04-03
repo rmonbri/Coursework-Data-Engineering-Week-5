@@ -151,18 +151,54 @@ def streamlit(pie_chart, merged_df):
     st.set_page_config(
         page_title="Botanist Dashboard", layout="wide")
 
+    st.markdown(
+        """
+    <style>
+        body {
+            background-color: #e8daba;
+            color: #000000;
+        }
+        .stApp {
+            background-color: #e8daba;
+        }
+        .stSidebar {
+            background-color: #94ce81;
+        }
+    </style>
+    """,
+        unsafe_allow_html=True
+    )
+
+    st.title(
+        ":seedling: :green[Botanist Dashboard] :seedling:")
     st.header(
-        ":seedling: LMNH - Botanist Dashboard :seedling:")
+        "_Liverpool Museum of Natural History_")
     st.subheader("Summary Statistics")
+
     col1, col2, col3 = st.columns(3)
+
     with col1:
         st.altair_chart(pie_chart)
+
     with col2:
-        st.write(f"## Average Temperature: {merged_df['temperature'].mean()}")
-        st.write(
-            f"## Average Water Content: {merged_df['moisture'].mean()}")
+        yesterday_temperature_mean, yesterday_moisture_mean = display_reading_change(
+            merged_df)
+        temperature_mean = merged_df['temperature'].mean()
+        moisture_mean = merged_df['moisture'].mean()
+        temperature_difference_string = f"{(temperature_mean - yesterday_temperature_mean).round(2)}°C since yesterday"
+        moisture_difference_string = f"{(moisture_mean - yesterday_moisture_mean).round(2)}% since yesterday"
+        # st.subheader(
+        #     f"Avg. Temperature: {temperature_mean.round(2)}°C")
+        st.metric(label="Avg. Temperature", value=f"{temperature_mean.round(2)}°C",
+                  delta=temperature_difference_string)
+        # st.subheader(
+        #     f"# Avg. Moisture: {moisture_mean.round(2)}%")
+        st.metric(label="# Avg. Moisture:", value=f"{moisture_mean.round(2)}%",
+                  delta=moisture_difference_string)
+
     with col3:
         st.write("### Title")
+
     st.subheader("Short-Term Database Insights")
     chosen_plant_id = int(st.selectbox(
         "Which plant would you like to analyse? Choose a plant ID:",
@@ -174,6 +210,15 @@ def streamlit(pie_chart, merged_df):
     st.write(f"You have selected the {plant_name}: ID {chosen_plant_id}")
 
     st.altair_chart(plant_chart)
+
+
+def display_reading_change(merged_df):
+    """Display the difference between readings from today and all time"""
+    not_today_df = merged_df[merged_df['measurement_time'].dt.day !=
+                             datetime.now().day]
+    temperature_mean = not_today_df['temperature'].mean()
+    moisture_mean = not_today_df['moisture'].mean()
+    return temperature_mean, moisture_mean
 
 
 if __name__ == "__main__":
