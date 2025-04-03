@@ -1,5 +1,6 @@
 '''This script detects anomalies in the last n (SPECIFY) measurements from the plant readers'''
 import os
+import pytz
 from datetime import datetime, timedelta
 from scipy.stats import zscore
 from dotenv import load_dotenv
@@ -20,7 +21,8 @@ def get_connection_to_db() -> pymssql.Connection:
 def get_time_n_minutes_ago(n: int) -> datetime:
     '''Gets a timestamp for n minutes ago '''
     # n will be specified later on based on data observations
-    time = datetime.now()-timedelta(minutes=n)
+    utc_now = datetime.now(pytz.utc)
+    time = utc_now - timedelta(minutes=n)
     print(time)
     return time.strftime('%Y-%m-%d %H:%M:%S')
 
