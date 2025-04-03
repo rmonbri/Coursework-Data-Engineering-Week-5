@@ -18,9 +18,11 @@ def get_connection_to_db() -> pymssql.Connection:
 
 
 def get_time_n_minutes_ago(n: int) -> datetime:
-    '''Gets a timestamp for n minutes ago '''  # n will be specified later on based on data observations
+    '''Gets a timestamp for n minutes ago '''
+    # n will be specified later on based on data observations
     time = datetime.now()-timedelta(minutes=n,
-                                    hours=1)  # hour is set to 1 to correct for the api being one hour behind. This should change later
+                                    hours=1)
+    # hour is set to 1 to correct for the api being one hour behind. This should change later
     print(time)
     return time.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -31,17 +33,17 @@ def get_sql_for_recent_measurements(n: int) -> str:
     sql = f'''
         SELECT plant_id,moisture,temperature
         FROM measurement
-        WHERE measurement_time > '{time}' 
+        WHERE measurement_time > '{time}'
         order by measurement_time desc
-          '''
+        '''
     return sql
 
 
-def get_recent_measurements() -> pd.DataFrame:
-    '''Gets a dataframe with the last (specified) measurement batches from the short-term database'''
+def get_recent_measurements(n: int = 10) -> pd.DataFrame:
+    '''Gets a dataframe with the last n measurement batches from the short-term database'''
     try:
         conn = get_connection_to_db()
-        sql = get_sql_for_recent_measurements(10)
+        sql = get_sql_for_recent_measurements(n)
         df = pd.read_sql(sql, conn)
         return df
     finally:
@@ -55,8 +57,11 @@ def add_zscore_columns(measurements: pd.DataFrame) -> pd.DataFrame:
     return measurements
 
 
-def get_outliers_by_zscore(measurements: pd.DataFrame, zscore_threshold: float = 2.5) -> pd.DataFrame:
-    '''Returns a dataframe of outliers whose zscores is greater than 2.5 unless specified otherwise.'''  # threshold will be specified later on based on data observations
+def get_outliers_by_zscore(measurements: pd.DataFrame,
+                           zscore_threshold: float = 2.5) -> pd.DataFrame:
+    '''Returns a dataframe of outliers whose 
+    zscores is greater than 2.5 unless specified otherwise.'''
+    # threshold will be specified later on based on data observations
     temperature_condition = measurements['temperature_zscore'].abs(
     ) > zscore_threshold
     moisture_condition = measurements['moisture_zscore'].abs(
@@ -88,6 +93,6 @@ def detect_plant_risks(measurements: pd.DataFrame, threshold: int = 5) -> dict[s
 
 
 if __name__ == '__main__':
-    measurements = get_recent_measurements()
-    measurements = add_zscore_columns(measurements)
-    print(detect_plant_risks(measurements))
+    recent_measurements = get_recent_measurements()
+    recent_measurements = add_zscore_columns(recent_measurements)
+    print(detect_plant_risks(recent_measurements))
