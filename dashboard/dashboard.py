@@ -193,7 +193,6 @@ def streamlit(pie_chart, merged_df, plant_df):
     with col2:
         anomaly_chart = get_plant_by_anomaly_chart(merged_df, plant_df)
 
-        st.write("Temperature anomalies over the past 24 hours")
         st.altair_chart(anomaly_chart)
 
     st.subheader("Short-Term Database Insights")
