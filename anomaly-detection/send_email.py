@@ -60,7 +60,6 @@ def format_plant_issues_data(anomaly_data: list[dict], affected_plants: list[int
         if plant_id in anomaly_data["temperature"]:
             issues.append("plant temperature sensor")
         plant_issues[plant_id] = ", ".join(issues)
-    print(plant_issues)
     return plant_issues
 
 
