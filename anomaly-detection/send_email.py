@@ -1,10 +1,13 @@
+"""Script to send an email to botanists with plants under their
+care that have faulty sensors based on anomaly detection script"""
+
 import os
-from dotenv import load_dotenv
-import pymssql
-import base64
-import boto3
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from dotenv import load_dotenv
+import pymssql
+import boto3
+
 from detect_anomalies import get_recent_measurements, detect_plant_risks, add_zscore_columns
 
 
@@ -19,7 +22,7 @@ def get_connection_to_db() -> pymssql.Connection:
 
 
 def get_botanist_details_from_db(plant_ids: list[int]):
-
+    """Connecting to database and retrieving botanist details"""
     conn = get_connection_to_db()
 
     curr = conn.cursor()
@@ -47,7 +50,7 @@ def get_botanist_details_from_db(plant_ids: list[int]):
 
 
 def format_plant_issues_data(anomaly_data: list[dict], affected_plants: list[int]) -> dict:
-
+    """Formatting all issues associated with the same plant_id into one sentence"""
     plant_issues = {}
 
     for plant_id in affected_plants:
@@ -131,29 +134,6 @@ def send_email(notification: dict):
         RawMessage={"Data": message.as_string()}
     )
 
-
-# def main():
-#     # Simulate anomaly data and affected plant ids
-#     anomaly_data = {
-#         "moisture": [1, 2, 3],
-#         "temperature": [3, 4, 5]
-#     }
-
-#     affected_plants = anomaly_data["moisture"] + anomaly_data["temperature"]
-
-#     # Format plant issues
-#     plant_issues = format_plant_issues_data(anomaly_data, affected_plants)
-
-#     # Fetch botanist details (use the plant ids from anomaly data)
-#     botanist_details = get_botanist_details_from_db(affected_plants)
-
-#     # Create notifications for each botanist
-#     notifications = format_botanist_notification(
-#         botanist_details, plant_issues)
-
-#     # Send emails
-#     for notification in notifications:
-#         send_email(notification)
 
 def run_email_pipeline():
     """Runs the full anomaly detection and email notification pipeline."""
