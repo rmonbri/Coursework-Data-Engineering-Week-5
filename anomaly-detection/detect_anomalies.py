@@ -77,6 +77,7 @@ def get_outlier_count_per_plant(measurements: pd.DataFrame) -> dict:
         ['plant_id'])['plant_id'].count()
     temp_outlier_count = temp_outliers.groupby(
         ['plant_id'])['plant_id'].count()
+
     return temp_outlier_count, moist_outlier_count
 
 
@@ -89,6 +90,7 @@ def detect_plant_risks(measurements: pd.DataFrame, threshold: int = 5) -> dict[s
     moist_outlier_count = moist_outlier_count[moist_outlier_count >= threshold]
     outliers = {'moisture': list(moist_outlier_count.keys()),
                 'temperature': list(temp_outlier_count.keys())}
+    # outliers = {'moisture': [5, 6, 7], 'temperature': [10, 20]}
     return outliers
 
 
