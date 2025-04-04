@@ -1,21 +1,15 @@
 # pylint: disable= broad-exception-caught
 """Script to merge extract, transform and load scripts into a single pipeline"""
 import logging
-from extract import get_plant_data_multiprocessing, save_to_csv
-from transform import read_data, save_clean_data_to_csv, read_csv_data, clean_data
-from load import get_measurements_from_df, ingress_measurements_to_db, get_measurements_from_csv
+from extract import get_plant_data_multiprocessing
+from transform import read_data, clean_data
+from load import get_measurements_from_df, ingress_measurements_to_db
 from dotenv import load_dotenv
 
-
-def local_pipeline():
-    """Combining all scripts"""
-    load_dotenv()
-    plant_data = get_plant_data_multiprocessing()
-    save_to_csv(plant_data, "data/plant-measurements.csv")
-    final_data = read_csv_data("data/plant-measurements.csv")
-    save_clean_data_to_csv(final_data)
-    plant_measurements = get_measurements_from_csv()
-    ingress_measurements_to_db(plant_measurements)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+)
 
 
 def handler(event, context):
@@ -50,4 +44,4 @@ def handler(event, context):
 
 
 if __name__ == "__main__":
-    local_pipeline()
+    handler(None, None)

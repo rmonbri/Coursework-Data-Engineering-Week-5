@@ -29,7 +29,6 @@ def get_measurements_from_csv(path: str = DATA_PATH) -> list[dict]:
 
 
 def get_measurements_from_df(data: pd.DataFrame) -> list[tuple]:
-
     return [tuple(row) for row in data.itertuples(index=False, name=None)]
 
 
