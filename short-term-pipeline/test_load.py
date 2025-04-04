@@ -1,3 +1,4 @@
+# pylint: skip-file
 """Tests for the extract script"""
 
 import csv
