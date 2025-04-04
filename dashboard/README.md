@@ -11,7 +11,6 @@ To install requirements run:
 A .env file must contain these variables:
 
 ```
-DB_DRIVER=
 DB_HOST=
 DB_NAME=
 DB_USERNAME=
