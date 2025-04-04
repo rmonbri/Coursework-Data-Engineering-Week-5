@@ -5,3 +5,4 @@ pymssql
 pyodbc
 datetime
 altair
+boto3
