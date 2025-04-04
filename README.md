@@ -6,7 +6,7 @@ Project for collecting and visualising data for plants in the possession of the 
 Plant data is collected once per minute, every minute for every plant. This data is stored in  a short-term database for 24 hours,
 after which it is moved to a longer term database.
 
-Extra details can be found [here](https://curriculum.sigmalabs.co.uk/Data-Engineering/Week%205/overview)
+Extra details can be found [here](https://curriculum.sigmalabs.co.uk/Advanced-Data/Week%205/overview)
 
 ---
 
