@@ -1,4 +1,4 @@
-# pylint: disable=import-error, no-member
+# pylint: disable=import-error, no-member, too-many-locals
 '''A script that creates a Streamlit dashboard using LMNH plant data from the last 24 hours'''
 from os import environ as ENV
 import io

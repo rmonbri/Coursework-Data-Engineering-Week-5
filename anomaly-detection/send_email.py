@@ -1,4 +1,4 @@
-# pylint: disable= broad-exception-caught
+# pylint: disable= broad-exception-caught,duplicate-code
 """Script to send an email to botanists with plants under their
 care that have faulty sensors based on anomaly detection script"""
 

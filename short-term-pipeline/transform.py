@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """Script to transform plant measurement data to fit the defined schema"""
 from datetime import timedelta
 import pandas as pd
