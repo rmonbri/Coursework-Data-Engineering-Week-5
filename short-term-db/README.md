@@ -16,7 +16,7 @@ ERD Diagram can be found [Here](https://drawsql.app/teams/sigma-labs-37/diagrams
 
 ERD Diagram:
 This is the schema for the short term db and should match it exactly.
-![ERD Diagram](assets/ERD.png)
+![ERD Diagram](../assets/ERD.png)
 
 
 

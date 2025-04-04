@@ -24,4 +24,4 @@ AWS_SECRET_ACCESS_KEY=
 
 
 Dashboard Wireframe:
-![Dashboard Wireframe](assets/dashboard_wireframe.png)
+![Dashboard Wireframe](../assets/dashboard_wireframe.png)
