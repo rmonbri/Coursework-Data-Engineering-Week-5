@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """Script to transform plant measurement data to fit the defined schema"""
 from datetime import timedelta
 import pandas as pd
@@ -54,11 +55,10 @@ def round_floats(data: pd.DataFrame) -> pd.DataFrame:
 
 def clean_data(data: pd.DataFrame) -> pd.DataFrame:
     '''Cleans the dataframe by transforming datatypes and values'''
-    clean_data = transform_to_datetime(data)
-    clean_data = round_floats(clean_data)
-    clean_data = correct_timezones(clean_data)
-
-    return clean_data
+    clean_data_df = transform_to_datetime(data)
+    clean_data_df = round_floats(clean_data_df)
+    clean_data_df = correct_timezones(clean_data_df)
+    return clean_data_df
 
 
 def save_clean_data_to_csv(data: pd.DataFrame):

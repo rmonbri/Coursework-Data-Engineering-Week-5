@@ -17,5 +17,9 @@ Extra details can be found [here](https://curriculum.sigmalabs.co.uk/Advanced-Da
 - Code should follow industry best practices. For Python this means PEP8, and should be linted at every step.
 - Code should be clear and documented where necessary.
 
-Architecture Diagram:
+---
+
+
+# Architecture Diagram
+
 ![Architecture Diagram](assets/architecture_diagram.png)

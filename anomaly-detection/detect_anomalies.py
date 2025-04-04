@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 '''This script detects anomalies in the last 15 measurements from the plant readers'''
 import os
 from datetime import datetime, timedelta

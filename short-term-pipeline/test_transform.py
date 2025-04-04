@@ -1,3 +1,4 @@
+# pylint: skip-file
 """Tests for the load script"""
 
 from unittest.mock import mock_open

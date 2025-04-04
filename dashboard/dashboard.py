@@ -1,11 +1,12 @@
+# pylint: disable=import-error, no-member, too-many-locals
 '''A script that creates a Streamlit dashboard using LMNH plant data from the last 24 hours'''
 from os import environ as ENV
 import io
 from datetime import datetime, timedelta
-from dotenv import load_dotenv  # pylint: disable=import-error
-import pandas as pd  # pylint: disable=import-error
-import streamlit as st  # pylint: disable=import-error
-import altair as alt  # pylint: disable=import-error
+from dotenv import load_dotenv
+import pandas as pd
+import streamlit as st
+import altair as alt
 import boto3
 import pymssql
 
@@ -146,7 +147,8 @@ def get_moisture_anomalies(merged_df: pd.DataFrame) -> pd.DataFrame:
     return merged_df[['plant_id', 'anomalies']].drop_duplicates()
 
 
-def get_plant_by_temperature_anomaly_chart(merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> alt.Chart:
+def get_plant_by_temperature_anomaly_chart(
+        merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> alt.Chart:
     '''Returns a bar chart of the top 10 plants by anomaly count'''
     anomaly_summary = get_temp_anomalies(
         merged_df).reset_index().drop(columns=['index'])
@@ -175,7 +177,8 @@ def get_plant_by_temperature_anomaly_chart(merged_df: pd.DataFrame, plant_df: pd
     return chart
 
 
-def get_plant_by_moisture_anomaly_chart(merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> alt.Chart:
+def get_plant_by_moisture_anomaly_chart(
+        merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> alt.Chart:
     '''Returns a bar chart of the top 10 plants by anomaly count'''
     anomaly_summary = get_moisture_anomalies(
         merged_df).reset_index().drop(columns=['index'])
@@ -272,7 +275,12 @@ def streamlit(merged_df: pd.DataFrame, plant_df: pd.DataFrame,
     with col2:
         st.header("Anomalous results")
 
-        st.write("Anomalies are defined as outliers outside of 2.5 standard deviations from a plant's mean sensor values. These anomalies may be attributable to faulty sensors, and should be investigated thoroughly to maintain a healthy range of flora at the museum.")
+        st.write(
+            "Anomalies are defined as outliers outside of 2.5 \
+            standard deviations from a plant's mean sensor values. \
+            These anomalies may be attributable to faulty sensors, \
+            and should be investigated thoroughly \
+            to maintain a healthy range of flora at the museum.")
 
         moisture_anomaly_chart = get_plant_by_moisture_anomaly_chart(
             merged_df, plant_df)

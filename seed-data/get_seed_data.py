@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 '''A script that scrapes the API for seed data'''
 import csv
 import json

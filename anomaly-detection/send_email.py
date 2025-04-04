@@ -1,3 +1,4 @@
+# pylint: disable= broad-exception-caught,duplicate-code
 """Script to send an email to botanists with plants under their
 care that have faulty sensors based on anomaly detection script"""
 
@@ -165,6 +166,8 @@ def run_email_pipeline():
 
 def lambda_handler(event, context):
     """AWS Lambda entry point."""
+    print(f"Event: {event}")
+    print(f"Context: {context}")
     try:
         run_email_pipeline()
         return {"statusCode": 200, "body": "Email notifications sent successfully."}
