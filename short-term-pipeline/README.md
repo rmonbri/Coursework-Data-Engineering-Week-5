@@ -23,6 +23,16 @@ To run the pipeline:
 
 `python pipeline.py`
 
+---
+
+## Updated Pipeline:
+
+- To take advantage of being able to run multiple lambdas, `pipeline.py` was adjusted to take an `event` consisting of a dict containing a `plant_id`.
+- `short-term-worker/worker.py` Will spin up an initial instance and from there create 50 workers, one for each plant.
+- Each individual worker will perform a HTTP request and update the database for the plant_id it was assigned.
+- This was added to fix long loading times encountered, but was not as neat as I would've liked.
+- Both images and lambdas are defined in `terraform/`
+- `worker.py` can be run independantly, but it is dependant on an ARN for a function.
 
 ---
 
