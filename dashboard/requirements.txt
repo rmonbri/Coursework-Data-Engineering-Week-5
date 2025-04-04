@@ -2,6 +2,6 @@ pandas
 streamlit
 python-dotenv
 pymssql
-pyodbc
 datetime
 altair
+boto3

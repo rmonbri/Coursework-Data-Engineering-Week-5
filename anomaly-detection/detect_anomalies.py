@@ -1,7 +1,7 @@
-'''This script detects anomalies in the last n (SPECIFY) measurements from the plant readers'''
+'''This script detects anomalies in the last 15 measurements from the plant readers'''
 import os
-import pytz
 from datetime import datetime, timedelta
+import pytz
 from scipy.stats import zscore
 from dotenv import load_dotenv
 import pymssql
@@ -39,7 +39,7 @@ def get_sql_for_recent_measurements(n: int) -> str:
     return sql
 
 
-def get_recent_measurements(n: int = 10) -> pd.DataFrame:
+def get_recent_measurements(n: int = 15) -> pd.DataFrame:
     '''Gets a dataframe with the last n measurement batches from the short-term database'''
     try:
         conn = get_connection_to_db()

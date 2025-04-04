@@ -1,33 +1,40 @@
 '''A script that creates a Streamlit dashboard using LMNH plant data from the last 24 hours'''
 from os import environ as ENV
+import io
 from datetime import datetime, timedelta
 from dotenv import load_dotenv  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 import streamlit as st  # pylint: disable=import-error
-import pyodbc  # pylint: disable=import-error
 import altair as alt  # pylint: disable=import-error
+import boto3
+import pymssql
 
 
-def get_conn() -> pyodbc.Connection:
-    '''Connects to AWS RDS using pyodbc'''
-    conn_str = (f"DRIVER={{{ENV['DB_DRIVER']}}};SERVER={ENV['DB_HOST']};"
-                f"PORT={ENV['DB_PORT']};DATABASE={ENV['DB_NAME']};"
-                f"UID={ENV['DB_USERNAME']};PWD={ENV['DB_PASSWORD']};Encrypt=no;")
+BUCKET_NAME = "c16-louis-data"
+PREFIX = "historical/"
 
-    connection = pyodbc.connect(conn_str)
+
+def get_conn() -> pymssql.Connection:
+    '''Connects to AWS RDS using pymssql'''
+    load_dotenv()
+    connection = pymssql.connect(host=ENV["DB_HOST"],
+                                 database=ENV["DB_NAME"],
+                                 user=ENV["DB_USERNAME"],
+                                 password=ENV["DB_PASSWORD"],
+                                 port=ENV["DB_PORT"])
 
     return connection
 
 
-def execute_query(connection: pyodbc.Connection, q: str) -> dict[list]:
-    '''Executes a query using pyodbc'''
+def execute_query(connection: pymssql.Connection, q: str) -> dict[list]:
+    '''Executes a query using pymssql'''
     cur = connection.cursor()
     cur.execute(q)
     data = cur.fetchall()
     return data
 
 
-def get_plant_information(connection: pyodbc.Connection) -> pd.DataFrame:
+def get_plant_information(connection: pymssql.Connection) -> pd.DataFrame:
     '''Queries the database, returns and merges tables'''
     plant_type_df = pd.read_sql('SELECT * FROM plant_type', connection)
     botanist_df = pd.read_sql('SELECT * FROM botanist', connection)
@@ -43,7 +50,7 @@ def get_plant_information(connection: pyodbc.Connection) -> pd.DataFrame:
     return plant_information
 
 
-def get_measurements(connection: pyodbc.Connection) -> pd.DataFrame:
+def get_measurements(connection: pymssql.Connection) -> pd.DataFrame:
     '''Returns all measurements from the measurement table taken within 24 hours'''
     query = "SELECT * FROM measurement;"
     measurement = pd.read_sql(query, connection)
@@ -138,7 +145,8 @@ def get_plant_by_anomaly_chart(merged_df: pd.DataFrame, plant_df: pd.DataFrame) 
     top_10_anomalies = top_10_anomalies[[
         'plant_id', "anomalies", "plant_name"]]
     top_10_anomalies.rename(columns={
-                            "plant_id": "Plant ID", "anomalies": "Anomaly Count", "plant_name": "Name"})
+                            "plant_id": "Plant ID", "anomalies": "Anomaly Count",
+                            "plant_name": "Name"})
     chart = alt.Chart(top_10_anomalies).mark_bar().encode(
         x=alt.X('anomalies:Q', axis=alt.Axis(title='Anomaly Count')),
         y=alt.Y('plant_name:O', sort=alt.EncodingSortField(
@@ -155,10 +163,30 @@ def get_plant_by_anomaly_chart(merged_df: pd.DataFrame, plant_df: pd.DataFrame) 
     return chart
 
 
-def streamlit(merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> None:
+@st.cache_data(ttl=3600)
+def load_data_from_s3(bucket: str, prefix: str) -> pd.DataFrame:
+    """Connecting to s3 and loading data from buckets"""
+    s3 = boto3.client("s3")
+    response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+
+    if "Contents" not in response:
+        return pd.DataFrame()
+
+    parquet_keys = [obj["Key"] for obj in response["Contents"]
+                    if obj["Key"].endswith(".parquet")]
+
+    dataframes = [
+        pd.read_parquet(io.BytesIO(s3.get_object(
+            Bucket=bucket, Key=key)["Body"].read()))
+        for key in parquet_keys
+    ]
+
+    return pd.concat(dataframes, ignore_index=True) if dataframes else pd.DataFrame()
+
+
+def streamlit(merged_df: pd.DataFrame, plant_df: pd.DataFrame,
+              merged_long_df: pd.DataFrame) -> None:
     '''Execute the streamlit code'''
-    st.set_page_config(
-        page_title="Botanist Dashboard", layout="wide")
 
     st.title(
         ":seedling: :green[Botanist Dashboard] :seedling:")
@@ -172,7 +200,10 @@ def streamlit(merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> None:
         merged_df)
 
     temperature_mean = merged_df['temperature'].mean()
-    temperature_difference_str = f"{(temperature_mean-yesterday_temperature_mean).round(2)}°C since yesterday"
+    temperature_difference_str = (
+        f"{(temperature_mean - yesterday_temperature_mean).round(2)}°C "
+        "since yesterday"
+    )
 
     moisture_mean = merged_df['moisture'].mean()
     moisture_difference_str = f"{(moisture_mean-yesterday_moisture_mean).round(2)}% since yesterday"
@@ -201,19 +232,38 @@ def streamlit(merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> None:
 
     chosen_plant_id = int(st.selectbox(
         "Which plant would you like to analyse? Choose a plant ID:",
-        (merged_df['plant_id'].unique())))
+        (merged_df['plant_id'].unique()), key='short-term-id'))
     plant_chart, plant_name = create_single_plant_chart(
         merged_df, chosen_plant_id)
 
     st.write(f"You have selected the {plant_name}: ID {chosen_plant_id}")
     st.altair_chart(plant_chart)
 
+    st.subheader("Long-Term Database Insights")
+
+    chosen_plant_id_long = int(st.selectbox(
+        "Which plant would you like to analyse? Choose a plant ID:",
+        (merged_long_df['plant_id'].unique()), key='long-term-id'))
+    plant_chart_long, plant_name_long = create_single_plant_chart(
+        merged_long_df, chosen_plant_id_long)
+
+    st.write(
+        f"You have selected the {plant_name_long}: ID {chosen_plant_id_long}")
+    st.altair_chart(plant_chart_long)
+
 
 if __name__ == "__main__":
+
+    st.set_page_config(
+        page_title="Botanist Dashboard", layout="wide")
     load_dotenv()
     conn = get_conn()
-    plant_df = get_plant_information(conn)
+    plants_df = get_plant_information(conn)
     measurement_df = get_measurements(conn)
-    merged_24hr_df = pd.merge(plant_df, measurement_df,
+    merged_24hr_df = pd.merge(plants_df, measurement_df,
                               on='plant_id', how='outer')
-    streamlit(merged_24hr_df, plant_df)
+    longterm_df = load_data_from_s3(BUCKET_NAME, PREFIX)
+    merged_longterm_df = pd.merge(
+        longterm_df, plants_df[['plant_id', 'plant_name']], on='plant_id', how='left')
+
+    streamlit(merged_24hr_df, plants_df, merged_longterm_df)
