@@ -1,7 +1,6 @@
 """Script to transform plant measurement data to fit the defined schema"""
-
-import pandas as pd
 from datetime import timedelta
+import pandas as pd
 
 
 def read_csv_data(file_name: str) -> pd.DataFrame:
@@ -44,7 +43,7 @@ def round_floats(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def clean_data(data: pd.DataFrame) -> pd.DataFrame:
-
+    '''Cleans the dataframe by transforming datatypes and values'''
     clean_data = transform_to_datetime(data)
     clean_data = round_floats(clean_data)
     clean_data = correct_timezones(clean_data)

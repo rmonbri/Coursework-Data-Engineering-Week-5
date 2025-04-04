@@ -1,8 +1,8 @@
 """Tests for the load script"""
 
 from unittest.mock import mock_open
-import pytest
 from unittest.mock import patch, MagicMock
+import pytest
 from load import (get_connection_to_db, get_measurements, upload_many_rows,
                   ingress_measurements_to_db)
 

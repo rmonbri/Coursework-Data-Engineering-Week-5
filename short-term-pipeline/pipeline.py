@@ -1,9 +1,9 @@
 """Script to merge extract, transform and load scripts into a single pipeline"""
+from dotenv import load_dotenv
 
 from extract import get_plant_data_multiprocessing, save_to_csv
 from transform import read_data, save_clean_data_to_csv, read_csv_data, clean_data
 from load import get_measurements_from_df, ingress_measurements_to_db, get_measurements_from_csv
-from dotenv import load_dotenv
 
 
 def local_pipeline():

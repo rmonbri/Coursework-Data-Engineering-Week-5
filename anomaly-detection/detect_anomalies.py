@@ -1,7 +1,7 @@
 '''This script detects anomalies in the last n (SPECIFY) measurements from the plant readers'''
 import os
-import pytz
 from datetime import datetime, timedelta
+import pytz
 from scipy.stats import zscore
 from dotenv import load_dotenv
 import pymssql
