@@ -78,8 +78,7 @@ def create_botanist_pie_chart(df: pd.DataFrame) -> alt.Chart:
         text=alt.Text("Number of plants:Q")
     )
     chart = (pie + text).properties(
-        title="Plant Distribution by Botanist"
-    )
+        title="Plant Distribution by Botanist")
 
     return chart
 
@@ -107,7 +106,7 @@ def create_single_plant_chart(merged_df: pd.DataFrame, plant_id: int) -> alt.Cha
 
     chart = alt.layer(temperature_line, moisture_line).resolve_scale(
         y='independent'
-    ).properties(title=f"Temperature + moisture content of the {plant_name} over the last 24 hours")
+    ).properties(title=f"Temperature and moisture content of the {plant_name}")
 
     return chart, plant_name
 
@@ -121,7 +120,7 @@ def display_reading_change(merged_df: pd.DataFrame) -> float:
     return temperature_mean, moisture_mean
 
 
-def get_anomalies(merged_df: pd.DataFrame) -> pd.DataFrame:
+def get_temp_anomalies(merged_df: pd.DataFrame) -> pd.DataFrame:
     '''Returns a dataframe of plant_id and anomaly count (temp with |zscore| > 2.5)'''
     merged_df = merged_df.copy()
     merged_df['temperature_zscore'] = merged_df.groupby('plant_id')['temperature'].transform(
@@ -134,9 +133,22 @@ def get_anomalies(merged_df: pd.DataFrame) -> pd.DataFrame:
     return merged_df[['plant_id', 'anomalies']].drop_duplicates()
 
 
-def get_plant_by_anomaly_chart(merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> alt.Chart:
+def get_moisture_anomalies(merged_df: pd.DataFrame) -> pd.DataFrame:
+    '''Returns a dataframe of plant_id and anomaly count (temp with |zscore| > 2.5)'''
+    merged_df = merged_df.copy()
+    merged_df['moisture_zscore'] = merged_df.groupby('plant_id')['moisture'].transform(
+        lambda x: (x - x.mean()) / x.std()
+    )
+
+    merged_df['anomalies'] = (abs(merged_df['moisture_zscore']) > 2.5).groupby(
+        merged_df['plant_id']).transform('sum')
+
+    return merged_df[['plant_id', 'anomalies']].drop_duplicates()
+
+
+def get_plant_by_temperature_anomaly_chart(merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> alt.Chart:
     '''Returns a bar chart of the top 10 plants by anomaly count'''
-    anomaly_summary = get_anomalies(
+    anomaly_summary = get_temp_anomalies(
         merged_df).reset_index().drop(columns=['index'])
     anomaly_df = pd.merge(anomaly_summary, plant_df,
                           how='outer', on="plant_id")
@@ -158,6 +170,35 @@ def get_plant_by_anomaly_chart(merged_df: pd.DataFrame, plant_df: pd.DataFrame) 
         width=600,
         height=400,
         title='Anomalous temperature results per plant in the last 24 hours'
+    )
+
+    return chart
+
+
+def get_plant_by_moisture_anomaly_chart(merged_df: pd.DataFrame, plant_df: pd.DataFrame) -> alt.Chart:
+    '''Returns a bar chart of the top 10 plants by anomaly count'''
+    anomaly_summary = get_moisture_anomalies(
+        merged_df).reset_index().drop(columns=['index'])
+    anomaly_df = pd.merge(anomaly_summary, plant_df,
+                          how='outer', on="plant_id")
+    top_10_anomalies = anomaly_df.sort_values(
+        'anomalies', ascending=False).head(10)
+    top_10_anomalies = top_10_anomalies[[
+        'plant_id', "anomalies", "plant_name"]]
+    top_10_anomalies.rename(columns={
+                            "plant_id": "Plant ID", "anomalies": "Anomaly Count",
+                            "plant_name": "Name"})
+    chart = alt.Chart(top_10_anomalies).mark_bar().encode(
+        x=alt.X('anomalies:Q', axis=alt.Axis(title='Anomaly Count')),
+        y=alt.Y('plant_name:O', sort=alt.EncodingSortField(
+            field='anomalies', order='descending'), axis=alt.Axis(title='Plant Name')),
+        color=alt.Color('anomalies:Q', scale=alt.Scale(scheme='greens'), legend=alt.Legend(
+            title='Anomaly Count')),
+        tooltip=['plant_name', 'plant_id', 'anomalies']
+    ).properties(
+        width=600,
+        height=400,
+        title='Anomalous moisture results per plant in the last 24 hours'
     )
 
     return chart
@@ -194,8 +235,6 @@ def streamlit(merged_df: pd.DataFrame, plant_df: pd.DataFrame,
     st.header(
         "_Liverpool Museum of Natural History_")
 
-    st.subheader("Summary Statistics")
-
     yesterday_temperature_mean, yesterday_moisture_mean = display_reading_change(
         merged_df)
 
@@ -211,24 +250,41 @@ def streamlit(merged_df: pd.DataFrame, plant_df: pd.DataFrame,
     col1, col2 = st.columns([3, 5])
 
     with col1:
+        st.header("Summary Stats")
         col3, col4 = st.columns(2)
         with col3:
-            st.metric(label="# Avg. Moisture:", value=f"{moisture_mean.round(2)}%",
-                      delta=moisture_difference_str)
-        with col4:
             st.metric(label="Avg. Temperature", value=f"{temperature_mean.round(2)}°C",
                       delta=temperature_difference_str)
+            st.metric(label="# Avg. Moisture:", value=f"{moisture_mean.round(2)}%",
+                      delta=moisture_difference_str)
+
+        with col4:
+            st.title(":sunny:")
+            st.title(":sweat_drops:")
 
         botanist_pie_chart = create_botanist_pie_chart(plant_df)
 
         st.altair_chart(botanist_pie_chart)
 
+        st.image("carl_linnaeus.jpeg",
+                 "Botanist of the month: Carl Linnaeus", width=200)
+
     with col2:
-        anomaly_chart = get_plant_by_anomaly_chart(merged_df, plant_df)
+        st.header("Anomalous results")
 
-        st.altair_chart(anomaly_chart)
+        st.write("Anomalies are defined as outliers outside of 2.5 standard deviations from a plant's mean sensor values. These anomalies may be attributable to faulty sensors, and should be investigated thoroughly to maintain a healthy range of flora at the museum.")
 
-    st.subheader("Short-Term Database Insights")
+        moisture_anomaly_chart = get_plant_by_moisture_anomaly_chart(
+            merged_df, plant_df)
+
+        st.altair_chart(moisture_anomaly_chart)
+
+        temperature_anomaly_chart = get_plant_by_temperature_anomaly_chart(
+            merged_df, plant_df)
+
+        st.altair_chart(temperature_anomaly_chart)
+
+    st.subheader("Short-Term 24-Hour Database Insights")
 
     chosen_plant_id = int(st.selectbox(
         "Which plant would you like to analyse? Choose a plant ID:",
