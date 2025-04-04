@@ -1,0 +1,6 @@
+boto3
+pandas
+pymssql
+python-dotenv
+pyarrow
+fastparquet
