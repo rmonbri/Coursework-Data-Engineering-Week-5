@@ -5,35 +5,36 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv  # pylint: disable=import-error
 import pandas as pd  # pylint: disable=import-error
 import streamlit as st  # pylint: disable=import-error
-import pyodbc  # pylint: disable=import-error
 import altair as alt  # pylint: disable=import-error
 import boto3
+import pymssql
 
 
 BUCKET_NAME = "c16-louis-data"
 PREFIX = "historical/"
 
 
-def get_conn() -> pyodbc.Connection:
-    '''Connects to AWS RDS using pyodbc'''
-    conn_str = (f"DRIVER={{{ENV['DB_DRIVER']}}};SERVER={ENV['DB_HOST']};"
-                f"PORT={ENV['DB_PORT']};DATABASE={ENV['DB_NAME']};"
-                f"UID={ENV['DB_USERNAME']};PWD={ENV['DB_PASSWORD']};Encrypt=no;")
-
-    connection = pyodbc.connect(conn_str)
+def get_conn() -> pymssql.Connection:
+    '''Connects to AWS RDS using pymssql'''
+    load_dotenv()
+    connection = pymssql.connect(host=ENV["DB_HOST"],
+                                 database=ENV["DB_NAME"],
+                                 user=ENV["DB_USERNAME"],
+                                 password=ENV["DB_PASSWORD"],
+                                 port=ENV["DB_PORT"])
 
     return connection
 
 
-def execute_query(connection: pyodbc.Connection, q: str) -> dict[list]:
-    '''Executes a query using pyodbc'''
+def execute_query(connection: pymssql.Connection, q: str) -> dict[list]:
+    '''Executes a query using pymssql'''
     cur = connection.cursor()
     cur.execute(q)
     data = cur.fetchall()
     return data
 
 
-def get_plant_information(connection: pyodbc.Connection) -> pd.DataFrame:
+def get_plant_information(connection: pymssql.Connection) -> pd.DataFrame:
     '''Queries the database, returns and merges tables'''
     plant_type_df = pd.read_sql('SELECT * FROM plant_type', connection)
     botanist_df = pd.read_sql('SELECT * FROM botanist', connection)
@@ -49,7 +50,7 @@ def get_plant_information(connection: pyodbc.Connection) -> pd.DataFrame:
     return plant_information
 
 
-def get_measurements(connection: pyodbc.Connection) -> pd.DataFrame:
+def get_measurements(connection: pymssql.Connection) -> pd.DataFrame:
     '''Returns all measurements from the measurement table taken within 24 hours'''
     query = "SELECT * FROM measurement;"
     measurement = pd.read_sql(query, connection)
