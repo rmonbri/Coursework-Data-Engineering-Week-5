@@ -3,3 +3,5 @@ pandas
 python-dotenv
 pymssql
 pytest
+lambda-multiprocessing
+boto3
