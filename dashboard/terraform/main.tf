@@ -30,7 +30,7 @@ resource "aws_ecs_task_definition" "service" {
   container_definitions = jsonencode([
     {
         name = "truck-dashboard-tf"
-        image = "${data.aws_ecr_image.dashboard-image.image_uri}"
+        image = "${data.aws_ecr_image.louis-dashboard-image.image_uri}"
         cpu = 0
         essential = true
         environment = [
