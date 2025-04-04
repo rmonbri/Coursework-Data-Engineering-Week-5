@@ -6,6 +6,6 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY extract.py transform.py load.py pipeline.py ./
+COPY detect_anomalies.py send_email.py ./
 
-CMD [ "pipeline.lambda_handler" ]
+CMD [ "send_email.lambda_handler" ]

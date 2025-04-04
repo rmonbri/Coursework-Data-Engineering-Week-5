@@ -6,6 +6,6 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY extract.py transform.py load.py pipeline.py ./
+COPY move_storage.py .
 
-CMD [ "pipeline.lambda_handler" ]
+CMD [ "move_storage.handler" ]
