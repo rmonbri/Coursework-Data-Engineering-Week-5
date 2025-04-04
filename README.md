@@ -16,3 +16,6 @@ Extra details can be found [here](https://curriculum.sigmalabs.co.uk/Data-Engine
 - No broken, erroneous or 'bad' code should be in a PR.
 - Code should follow industry best practices. For Python this means PEP8, and should be linted at every step.
 - Code should be clear and documented where necessary.
+
+Architecture Diagram:
+![Architecture Diagram](assets/architecture_diagram.png)

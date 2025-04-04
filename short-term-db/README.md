@@ -12,7 +12,13 @@ Files here should be relevant to this db including:
 
 ## Schema
 
-ERD Diagram can be found [Here](https://drawsql.app/teams/sigma-labs-37/diagrams/lmnh-plants). This is the schema for the short term db and should match it exactly.
+ERD Diagram can be found [Here](https://drawsql.app/teams/sigma-labs-37/diagrams/lmnh-plants). 
+
+ERD Diagram:
+This is the schema for the short term db and should match it exactly.
+![ERD Diagram](assets/ERD.png)
+
+
 
 The command:
 
