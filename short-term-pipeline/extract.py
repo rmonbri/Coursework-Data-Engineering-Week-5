@@ -6,8 +6,8 @@ import os
 import requests
 from lambda_multiprocessing import Pool
 
-
 BASE_URL = "https://data-eng-plants-api.herokuapp.com/plants/"
+PLANT_COUNT = 51
 
 
 def get_plant_data(plant_id: int):
@@ -71,8 +71,6 @@ def save_to_csv(data: list[dict], file_name: str):
 
 if __name__ == "__main__":
     start = time.time()
-    all_plant_data = get_plant_data_multiprocessing()
-    save_to_csv(all_plant_data, "data/plant-measurements.csv")
     end = time.time()
 
     print(f"Time to run: {end-start}")
