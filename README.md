@@ -18,4 +18,4 @@ Extra details can be found [here](https://curriculum.sigmalabs.co.uk/Data-Engine
 - Code should be clear and documented where necessary.
 
 Architecture Diagram:
-![Architecture Diagram](../assets/architecture_diagram.png)
+![Architecture Diagram](assets/architecture_diagram.png)
